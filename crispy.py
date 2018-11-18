@@ -7,12 +7,14 @@ with open('sherlock.txt') as f:
   sherlock_vocabulary = markovify.Text(sherlock)
 
 with open('biglebowski.txt') as f:
-  sherlock = f.read()
-  biglebowski_vocabulary = markovify.Text(sherlock)
+  biglebowski = f.read()
+  biglebowski_vocabulary = markovify.Text(biglebowski)
+
+with open('custom.txt') as f:
+  training = f.read()
+  custom_vocabulary = markovify.NewlineText(training)
 
 cache = []
-training = 'Cheers!'
-custom_vocabulary = markovify.Text(training)
 vocabulary = custom_vocabulary
 admins = ['sig','darth','cheach','evil_phil']
 target = 'crispy'
@@ -41,14 +43,12 @@ with Browser('chrome', headless=True) as browser:
     time.sleep(0.25)
     browser.find_by_text('Close cams').click()
 
+    i = 0
     while True:
       if (browser.is_element_present_by_css('.chat__MessageHandle')):
         last_usr = browser.find_by_css('.chat__MessageHandle').last
         last_msg = browser.find_by_css('.chat__MessageBody').last
-        if 'http' not in last_msg.text.lower() and last_usr.text.lower() != bot.lower():
-          training = training + '\n' + last_msg.text
-          custom_vocabulary = markovify.Text(training)
-        if target.lower() in last_usr.text.lower() and last_usr.text.lower() != bot.lower():
+        if target.lower() in last_usr.text.lower() and last_usr.text.lower() != bot.lower() and len(cache) > 0:
           browser.find_by_css('.chat__Input').fill(cache.pop(0))
           browser.find_by_css('.chat__InputSubmit').click()
         elif last_usr.text.lower() in admins:
@@ -70,8 +70,20 @@ with Browser('chrome', headless=True) as browser:
             vocabulary = custom_vocabulary
             cache = []
             time.sleep(0.25)
+        if 'http' not in last_msg.text.lower() and last_usr.text.lower() != bot.lower() and last_msg.text not in training and len(last_msg.text) > 10:
+          training = training + '\n' + last_msg.text
+          custom_vocabulary = markovify.NewlineText(training)
+          time.sleep(0.25)
       if (len(cache) < 100):
         text = vocabulary.make_short_sentence(60)
         if text:
           cache.append(text)
+      if (i > 600*4):
+        i = 0
+        cache = []
+        with open('custom.txt', '+w') as f:
+          f.write(training)
+        time.sleep(0.25)
+      i = i + 1
+
 
