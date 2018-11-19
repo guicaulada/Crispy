@@ -36,6 +36,9 @@ class Crispy():
     self.commands = {}
     atexit.register(self.shutdown)
 
+  def is_action(self, message):
+    return message[0] == '*'
+
   def filter_message(self, message, filtr):
     for f in filtr:
       if f.lower() in message.lower():
@@ -45,7 +48,7 @@ class Crispy():
   def is_trained(self,train,message):
     return message in self.training_text[train]
 
-  def starts_with_bang(self,message):
+  def is_command(self,message):
     return message[0] == '!'
 
   def train(self, username, message):
@@ -177,10 +180,12 @@ class Crispy():
     while self.logged_in:
       if (self.is_message_present()):
         username, message = self.capture_message()
+        if self.is_action(message):
+          username = message.split(' ')[1]
         if self.is_target(username) and self.has_cache():
           self.send_cached_message()
         elif self.is_admin(username):
-          if self.starts_with_bang(message):
+          if self.is_command(message):
             self.try_command(message)
         self.train(username,message)
       self.generate_message()
