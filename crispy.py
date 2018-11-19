@@ -1,5 +1,5 @@
 from splinter import Browser
-import markovify
+from markov import Text, NewlineText
 import time
 import atexit
 
@@ -84,7 +84,8 @@ class Crispy():
     self.browser.find_by_css('.chat__InputSubmit').click()
 
   def send_cached_message(self):
-    self.send_message(self.cache.pop(0))
+    if self.has_cache():
+      self.send_message(self.cache.pop(0))
 
   def capture_message(self):
     user = self.browser.find_by_css('.chat__MessageHandle').last.text
@@ -126,7 +127,7 @@ class Crispy():
     with open(file) as f:
       text = f.read()
       if (kwargs.get('NewlineText')):
-        self.vocabularies[name] = markovify.NewlineText(text)
+        self.vocabularies[name] = NewlineText(text)
         if (kwargs.get('Training')):
           filtr = []
           if (kwargs.get('Filter')):
@@ -135,14 +136,14 @@ class Crispy():
             if self.filter_message(message, filtr):
               old_vocabulary = self.vocabularies[name]
               self.training_text[file] = self.training_text[file] + '\n' + message
-              self.vocabularies[name] = markovify.NewlineText(self.training_text[file])
+              self.vocabularies[name] = NewlineText(self.training_text[file])
               if (self.vocabulary==old_vocabulary):
                 self.set_vocabulary(name)
               time.sleep(0.25)
           self.training[file] = training_function
           self.training_text[file] = text
       else:
-        self.vocabularies[name] = markovify.Text(text)
+        self.vocabularies[name] = Text(text)
 
     def vocabulary_command():
       self.send_message('Now using {} vocabulary!'.format(name))
@@ -152,8 +153,20 @@ class Crispy():
     self.add_command(name, vocabulary_command)
 
   def generate_message(self):
+    return self.vocabulary.make_short_sentence(self.max_len)
+
+  def generate_message_with(self,message):
+    return self.vocabulary.make_short_sentence_with(message, self.max_len)
+
+  def generate_cached_message(self):
     if (len(self.cache) < self.max_cache) and self.vocabulary:
-      text = self.vocabulary.make_short_sentence(self.max_len)
+      text = self.generate_message()
+      if text:
+        self.cache.append(text)
+
+  def generate_cached_message_with(self,message):
+    if (len(self.cache) < self.max_cache) and self.vocabulary:
+      text = self.generate_message_with(message)
       if text:
         self.cache.append(text)
 
@@ -172,6 +185,16 @@ class Crispy():
   def force_save(self):
     self.save(Force=True)
 
+  def capture_action(self, message):
+    return message.split()[1], ' '.join(message.split()[2:])
+
+  def answer_to(self, message):
+    text = self.generate_message_with(message)
+    if text:
+      self.send_message(text)
+    else:
+      self.send_cached_message()
+
   def scan(self):
     if not self.logged_in:
       self.login()
@@ -180,17 +203,22 @@ class Crispy():
     while self.logged_in:
       if (self.is_message_present()):
         username, message = self.capture_message()
-        if self.is_action(message):
-          username = message.split(' ')[1]
-        if self.is_target(username) and self.has_cache():
-          self.send_cached_message()
+        if self.is_target(username):
+          self.answer_to(message)
+        elif self.is_action(message):
+          action_username, action_message = self.capture_action(message)
+          if self.is_target(action_username):
+            self.answer_to(action_message)
+            username = action_username
+            message = action_message
         elif self.is_admin(username):
           if self.is_command(message):
             self.try_command(message)
         self.train(username,message)
-      self.generate_message()
+      self.generate_cached_message()
       self.save()
 
   def shutdown(self):
+    print('Saving and shutting down!')
     self.force_save()
     self.browser.quit()
