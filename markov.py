@@ -1,6 +1,5 @@
 from markovify import Text as T
 import nltk
-import itertools
 import re
 
 class Text(T):
