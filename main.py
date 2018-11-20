@@ -1,7 +1,12 @@
 from config import *
 from crispy import Crispy
 
-crispy = Crispy(bot=bot, room=room, target=target, admins=admins, save_interval=save_interval, state_size=state_size, tries=tries, similarity=similarity)
+crispy = Crispy(
+  bot=bot, room=room, target=target,
+  admins=admins, save_interval=save_interval,
+  state_size=state_size, tries=tries,
+  similarity=similarity, wipe_interval=wipe_interval
+)
 
 crispy.add_vocabulary('sherlock', 'sherlock.txt')
 crispy.add_vocabulary('biglebowski', 'biglebowski.txt')

@@ -10,6 +10,7 @@ class Crispy():
       print('Missing required bot parameter please provide bot, room, taget and admins!')
       exit()
     self.logged_in = False
+    self.last_wipe = self.current_time()
     self.last_save = self.current_time()
     self.training = {}
     self.training_text = {}
@@ -17,11 +18,13 @@ class Crispy():
     self.max_cache = kwargs.get('max_cache', 100)
     self.max_len = kwargs.get('max_len', 60)
     self.min_len = kwargs.get('min_len', 10)
+    self.wipe_interval = kwargs.get('wipe_interval', 10)
     self.save_interval = kwargs.get('save_interval', 10)
     self.sensitivity = kwargs.get('sensitivity', 0.5)
     self.similarity = kwargs.get('similarity', 0.5)
     self.state_size = kwargs.get('state_size', 2)
     self.cache = []
+    self.sent = []
     self.browser = Browser('chrome', headless=True)
     self.vocabulary = None
     self.vocabularies = {}
@@ -83,6 +86,7 @@ class Crispy():
     return len(self.cache) > 0
 
   def send_message(self, message):
+    self.sent.append(message)
     self.browser.find_by_css('.chat__Input').fill(message)
     self.browser.find_by_css('.chat__InputSubmit').click()
 
@@ -155,10 +159,10 @@ class Crispy():
     self.add_command(name, vocabulary_command)
 
   def generate_message(self):
-    return self.vocabulary.make_short_sentence(self.max_len, tries=self.tries, similarity=self.similarity)
+    return self.vocabulary.make_short_sentence(self.max_len, tries=self.tries)
 
   def generate_message_from(self,message):
-    return self.vocabulary.make_sentence_from(message, max(self.max_len, len(message)), 0, state_size=self.state_size, tries=self.tries, similarity=self.similarity)
+    return self.vocabulary.make_sentence_from(message, max(self.max_len, len(message)), 0, state_size=self.state_size, tries=self.tries, similarity=self.similarity, blacklist=self.sent)
 
   def generate_cached_message(self):
     if (len(self.cache) < self.max_cache) and self.vocabulary:
@@ -196,6 +200,13 @@ class Crispy():
     else:
       self.send_cached_message()
 
+  def wipe_sent_messages(self, **kwargs):
+    if (self.current_time()-self.last_wipe > self.wipe_interval*60000) or kwargs.get('force'):
+      self.sent = []
+
+  def force_wipe(self):
+    self.wipe_sent_messages(force=True)
+
   def scan(self):
     if not self.logged_in:
       self.login()
@@ -215,6 +226,7 @@ class Crispy():
             self.answer_to(message)
         self.train(username,message)
       self.generate_cached_message()
+      self.wipe_sent_messages()
       self.save()
       time.sleep(0.25)
 
