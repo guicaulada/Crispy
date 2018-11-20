@@ -37,6 +37,8 @@ class Crispy():
     atexit.register(self.shutdown)
 
   def is_action(self, message):
+    if len(message) == 0:
+      return False
     return message[0] == '*'
 
   def filter_message(self, message, filtr):
