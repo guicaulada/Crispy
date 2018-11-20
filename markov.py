@@ -7,7 +7,7 @@ class Text(T):
     tries = kwargs.get('tries', 10)
     tokens = nltk.word_tokenize(message)
     for w, t in nltk.pos_tag(tokens):
-      if (t[0] == 'N' or t[0] == 'V' or t[0] == 'R' or t[0] == 'J'):
+      if (t[0] == 'N' or t[0] == 'R' or t[0] == 'V'):
         for _ in range(tries):
           sentence = self.make_sentence_with_start(w,strict,**kwargs)
           if sentence and len(sentence) <= max_chars and len(sentence) >= min_chars:
