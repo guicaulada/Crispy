@@ -1,4 +1,5 @@
 from splinter import Browser
+from difflib import SequenceMatcher
 from markov import Text, NewlineText
 import time
 import atexit
@@ -16,6 +17,7 @@ class Crispy():
     self.max_len = 60  # For sent messages.
     self.min_len = 10 # For trained messages.
     self.save_interval = 10 # Save interval is in minutes.
+    self.sensitivity = 0.5
     if (kwargs.get('MaxCache')):
       self.max_cache = kwargs['MaxCache']
     if (kwargs.get('MaxLen')):
@@ -24,6 +26,8 @@ class Crispy():
       self.min_len = kwargs['MinLen']
     if (kwargs.get('SaveInterval')):
       self.save_interval = kwargs['SaveInterval']
+    if (kwargs.get('Sensitivity')):
+      self.save_interval = kwargs['Sensitivity']
     self.cache = []
     self.browser = Browser('chrome', headless=True)
     self.vocabulary = None
@@ -75,7 +79,7 @@ class Crispy():
   def is_target(self,username):
     if not username:
       return False
-    return self.target.lower() in username.lower() and not self.is_bot(username)
+    return SequenceMatcher(None, self.target.lower(), username.lower()).ratio() > self.sensitivity and not self.is_bot(username)
 
   def is_admin(self,username):
     if not username:
