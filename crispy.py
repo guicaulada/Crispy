@@ -68,12 +68,18 @@ class Crispy():
         self.commands[command]()
 
   def is_bot(self,username):
+    if not username:
+      return False
     return username.lower() == self.bot.lower()
 
   def is_target(self,username):
+    if not username:
+      return False
     return self.target.lower() in username.lower() and not self.is_bot(username)
 
   def is_admin(self,username):
+    if not username:
+      return False
     return username.lower() in self.admins
 
   def has_cache(self):
@@ -88,12 +94,15 @@ class Crispy():
       self.send_message(self.cache.pop(0))
 
   def capture_message(self):
-    user = self.browser.find_by_css('.chat__MessageHandle').last.text
+    if ('chat__MessageHandle' in self.browser.find_by_css('.chat__Message').last.html):
+      user = self.browser.find_by_css('.chat__MessageHandle').last.text
+    else:
+      user = None
     message = self.browser.find_by_css('.chat__MessageBody').last.text
     return user, message
 
   def is_message_present(self):
-    return self.browser.is_element_present_by_css('.chat__MessageHandle')
+    return self.browser.is_element_present_by_css('.chat__Message')
 
   def login(self):
     print('Logging in to '+self.url)
@@ -205,15 +214,13 @@ class Crispy():
         username, message = self.capture_message()
         if self.is_target(username):
           self.answer_to(message)
-        elif self.is_action(message):
-          action_username, action_message = self.capture_action(message)
-          if self.is_target(action_username):
-            self.answer_to(action_message)
-            username = action_username
-            message = action_message
         elif self.is_admin(username):
           if self.is_command(message):
             self.try_command(message)
+        elif self.is_action(message):
+          username, message = self.capture_action(message)
+          if self.is_target(username):
+            self.answer_to(message)
         self.train(username,message)
       self.generate_cached_message()
       self.save()
