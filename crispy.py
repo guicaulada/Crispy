@@ -242,15 +242,15 @@ class Crispy():
     while self.logged_in:
       if (self.is_message_present()):
         username, message = self.capture_message()
-        if self.is_target(username):
-          self.answer_to(message)
-        elif self.is_admin(username):
-          if self.is_command(message):
-            self.try_command(message)
-        elif self.is_action(message):
+        if self.is_action(message):
           username, message = self.capture_action(message)
           if self.is_target(username):
             self.answer_to(message)
+        elif self.is_command(message):
+          if self.is_admin(username):
+            self.try_command(message)
+        elif self.is_target(username):
+          self.answer_to(message)
         self.train(username,message)
       self.generate_cached_message()
       self.wipe_sent_messages()
