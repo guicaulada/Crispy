@@ -6,9 +6,6 @@ import atexit
 
 class Crispy():
   def __init__(self, **kwargs):
-    if not 'bot' in kwargs or not 'room' in kwargs or not 'target' in kwargs or not 'admins' in kwargs:
-      print('Missing required bot parameter please provide bot, room, taget and admins!')
-      exit()
     self.logged_in = False
     self.last_wipe = self.current_time()
     self.last_save = self.current_time()
@@ -23,21 +20,21 @@ class Crispy():
     self.sensitivity = kwargs.get('sensitivity', 0.5)
     self.similarity = kwargs.get('similarity', 0.5)
     self.state_size = kwargs.get('state_size', 2)
+    self.targets = kwargs.get('targets', [])
+    self.bot = kwargs.get('bot', 'Crispybot')
+    self.room = kwargs.get('room', self.bot)
+    self.admins = kwargs.get('admins', [])
     self.cache = []
     self.sent = []
     self.browser = Browser('chrome', headless=True)
     self.vocabulary = None
     self.vocabularies = {}
-    self.bot = kwargs['bot']
-    self.room = kwargs['room']
-    self.target = kwargs['target']
-    self.admins = kwargs['admins']
     self.url = 'https://jumpin.chat/'+str(self.room)
     self.commands = {}
     atexit.register(self.shutdown)
 
   def is_action(self, message):
-    if len(message) == 0:
+    if not message:
       return False
     return message[0] == '*'
 
@@ -48,9 +45,13 @@ class Crispy():
     return True
 
   def is_trained(self,train,message):
+    if not message:
+      return False
     return message in self.training_text[train]
 
   def is_command(self,message):
+    if not message:
+      return False
     return message[0] == '!'
 
   def train(self, username, message):
@@ -66,8 +67,8 @@ class Crispy():
 
   def try_command(self,message):
     for command in self.commands:
-      if message[1:].lower() == command.lower():
-        self.commands[command]()
+      if message.split()[0][1:] == command:
+        self.commands[command](crispy=self,args=message.split()[1:])
 
   def is_bot(self,username):
     if not username:
@@ -77,7 +78,25 @@ class Crispy():
   def is_target(self,username):
     if not username:
       return False
-    return SequenceMatcher(None, self.target.lower(), username.lower()).ratio() > min(max(1-self.sensitivity,0),1) and not self.is_bot(username)
+    for t in self.targets:
+      if SequenceMatcher(None, t.lower(), username.lower()).ratio() > min(max(1-self.sensitivity,0),1) and not self.is_bot(username):
+        return True
+    return False
+
+  def add_target(self,target):
+    if target not in self.targets:
+      if isinstance(target, str):
+        self.targets.append(target)
+      elif isinstance(target,list):
+        self.targets = self.targets+target
+
+  def del_target(self,target):
+    if target in self.targets:
+      if isinstance(target, str):
+        self.targets.remove(target)
+      elif isinstance(target,list):
+        for t in target:
+          self.targets.remove(t)
 
   def is_admin(self,username):
     if not username:
@@ -157,7 +176,7 @@ class Crispy():
       else:
         self.vocabularies[name] = Text(text, state_size=self.state_size)
 
-    def vocabulary_command():
+    def vocabulary_command(**kwargs):
       self.send_message('Now using {} vocabulary!'.format(name))
       self.vocabulary = self.vocabularies[name]
       self.cache = []
