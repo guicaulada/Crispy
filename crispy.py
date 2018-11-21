@@ -88,9 +88,12 @@ class Crispy():
     return len(self.cache) > 0
 
   def send_message(self, message):
-    self.sent.append(message)
-    self.browser.find_by_css('.chat__Input').fill(message)
-    self.browser.find_by_css('.chat__InputSubmit').click()
+    if (message not in self.sent):
+      self.sent.append(message)
+      self.browser.find_by_css('.chat__Input').fill(message)
+      self.browser.find_by_css('.chat__InputSubmit').click()
+    else:
+      self.answer_to(message)
 
   def send_cached_message(self):
     if self.has_cache():
