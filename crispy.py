@@ -167,7 +167,7 @@ class Crispy():
     return self.vocabulary.make_short_sentence(self.max_len, tries=self.tries)
 
   def generate_message_from(self,message):
-    return self.vocabulary.make_sentence_from(message, max(self.max_len, len(message)), 0, state_size=self.state_size, tries=self.tries, similarity=self.similarity, blacklist=self.sent)
+    return self.vocabulary.make_sentence_from(message, max(self.max_len, len(message)), 0, state_size=self.state_size, tries=self.tries, similarity=self.similarity)
 
   def generate_cached_message(self):
     if (len(self.cache) < self.max_cache) and self.vocabulary:
