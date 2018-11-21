@@ -84,18 +84,21 @@ class Crispy():
     return False
 
   def add_target(self,target):
-    if target not in self.targets:
-      if isinstance(target, str):
+    if isinstance(target, str):
+      if target not in self.targets:
         self.targets.append(target)
-      elif isinstance(target,list):
-        self.targets = self.targets+target
+    elif isinstance(target,list):
+      for t in target:
+        if t not in self.targets:
+          self.targets.append(t)
 
   def del_target(self,target):
-    if target in self.targets:
-      if isinstance(target, str):
+    if isinstance(target, str):
+      if target in self.targets:
         self.targets.remove(target)
-      elif isinstance(target,list):
-        for t in target:
+    elif isinstance(target,list):
+      for t in target:
+        if t in self.targets:
           self.targets.remove(t)
 
   def is_admin(self,username):
