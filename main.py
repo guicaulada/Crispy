@@ -6,7 +6,7 @@ crispy = Crispy(
   bot=bot, room=room, targets=targets,
   admins=admins, save_interval=save_interval,
   state_size=state_size, tries=tries, sensitivity=sensitivity,
-  similarity=similarity, wipe_interval=wipe_interval
+  similarity=similarity, wipe_interval=wipe_interval, max_cache=max_cache
 )
 
 from commands import *
