@@ -10,7 +10,7 @@ def target_command(**kwargs):
   if crispy:
     args = kwargs.get('args')
     if args:
-      crispy.send_message(crispy.answer_to(' '.join(args)))
+      crispy.answer_to(' '.join(args))
       crispy.add_target(args)
 
 def untarget_command(**kwargs):
@@ -18,5 +18,5 @@ def untarget_command(**kwargs):
   if crispy:
     args = kwargs.get('args')
     if args:
-      crispy.send_message(crispy.answer_to(' '.join(args)))
+      crispy.answer_to(' '.join(args))
       crispy.del_target(args)
