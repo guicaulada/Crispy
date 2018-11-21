@@ -4,7 +4,7 @@ from crispy import Crispy
 crispy = Crispy(
   bot=bot, room=room, target=target,
   admins=admins, save_interval=save_interval,
-  state_size=state_size, tries=tries,
+  state_size=state_size, tries=tries, sensitivity=sensitivity,
   similarity=similarity, wipe_interval=wipe_interval
 )
 
