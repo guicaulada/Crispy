@@ -3,8 +3,8 @@ from config import *
 from crispy import Crispy
 
 crispy = Crispy(
-  bot=bot, room=room, targets=targets,
-  admins=admins, save_interval=save_interval,
+  bot=bot, room=room, targets=targets, max_len=max_len,
+  admins=admins, save_interval=save_interval, min_len=min_len,
   state_size=state_size, tries=tries, sensitivity=sensitivity,
   similarity=similarity, wipe_interval=wipe_interval, max_cache=max_cache
 )
