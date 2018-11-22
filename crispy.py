@@ -110,12 +110,9 @@ class Crispy():
     return len(self.cache) > 0
 
   def send_message(self, message):
-    if (message not in self.sent):
-      self.sent.append(message)
-      self.browser.find_by_css('.chat__Input').fill(message)
-      self.browser.find_by_css('.chat__InputSubmit').click()
-    else:
-      self.answer_to(message)
+    self.sent.append(message)
+    self.browser.find_by_css('.chat__Input').fill(message)
+    self.browser.find_by_css('.chat__InputSubmit').click()
 
   def send_cached_message(self):
     if self.has_cache():
@@ -189,7 +186,7 @@ class Crispy():
     return self.vocabulary.make_short_sentence(self.max_len, tries=self.tries)
 
   def generate_message_from(self,message):
-    return self.vocabulary.make_sentence_from(message, max(self.max_len, len(message)), 0, state_size=self.state_size, tries=self.tries, similarity=self.similarity)
+    return self.vocabulary.make_sentence_from(message, max(self.max_len, len(message)), 0, state_size=self.state_size, tries=self.tries, similarity=self.similarity, filtr=self.sent)
 
   def generate_cached_message(self):
     if (len(self.cache) < self.max_cache) and self.vocabulary:
@@ -229,6 +226,7 @@ class Crispy():
 
   def wipe_sent_messages(self, **kwargs):
     if (self.current_time()-self.last_wipe > self.wipe_interval*60000) or kwargs.get('force'):
+      self.last_wipe = self.current_time()
       self.sent = []
 
   def force_wipe(self):
