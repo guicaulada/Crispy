@@ -215,7 +215,7 @@ class Crispy():
     self.save(force=True)
 
   def capture_action(self, message):
-    return message.split()[1], ' '.join(message.split()[2:])
+    return message.split()[1], ' '.join(message.split()[1:])
 
   def answer_to(self, message):
     text = self.generate_message_from(message)
