@@ -11,6 +11,7 @@ class Crispy():
     self.last_save = self.current_time()
     self.training = {}
     self.training_text = {}
+    self.filter = kwargs.get('filter', [])
     self.tries = kwargs.get('tries', 10)
     self.max_cache = kwargs.get('max_cache', 100)
     self.max_len = kwargs.get('max_len', 60)
@@ -21,14 +22,16 @@ class Crispy():
     self.similarity = kwargs.get('similarity', 0.5)
     self.state_size = kwargs.get('state_size', 2)
     self.targets = kwargs.get('targets', [])
+    self.triggers = kwargs.get('triggers', [])
+    self.triggered = kwargs.get('triggered', 0.0)
     self.bot = kwargs.get('bot', 'Crispybot')
     self.room = kwargs.get('room', self.bot)
     self.admins = kwargs.get('admins', [])
     self.cache = []
     self.sent = []
-    self.browser = Browser('chrome', headless=True)
     self.vocabulary = None
     self.vocabularies = {}
+    self.browser = Browser('chrome', headless=True)
     self.url = 'https://jumpin.chat/'+str(self.room)
     self.commands = {}
     atexit.register(self.shutdown)
@@ -38,8 +41,8 @@ class Crispy():
       return False
     return message[0] == '*'
 
-  def filter_message(self, message, filtr):
-    for f in filtr:
+  def filter_message(self, message):
+    for f in self.filter:
       if f.lower() in message.lower():
         return False
     return True
@@ -53,6 +56,15 @@ class Crispy():
     if not message:
       return False
     return message[0] == '!'
+
+  def is_trigger(self, message):
+    if not message:
+      return False
+    for t in self.triggers:
+      for m in message.split():
+        if SequenceMatcher(None, t.lower(), m.lower()).ratio() > min(max(1-self.triggered,0),1):
+          return True
+    return False
 
   def train(self, username, message):
     for train in self.training:
@@ -163,14 +175,12 @@ class Crispy():
       if (kwargs.get('newline_text')):
         self.vocabularies[name] = NewlineText(text, state_size=self.state_size)
         if (kwargs.get('training')):
-          filtr = kwargs.get('filter', [])
           def training_function(message):
-            if self.filter_message(message, filtr):
-              old_vocabulary = self.vocabularies[name]
-              self.training_text[file] = self.training_text[file] + '\n' + message
-              self.vocabularies[name] = NewlineText(self.training_text[file], state_size=self.state_size)
-              if (self.vocabulary==old_vocabulary):
-                self.set_vocabulary(name)
+            old_vocabulary = self.vocabularies[name]
+            self.training_text[file] = self.training_text[file] + '\n' + message
+            self.vocabularies[name] = NewlineText(self.training_text[file], state_size=self.state_size)
+            if (self.vocabulary==old_vocabulary):
+              self.set_vocabulary(name)
           self.training[file] = training_function
           self.training_text[file] = text
       else:
@@ -186,7 +196,7 @@ class Crispy():
     return self.vocabulary.make_short_sentence(self.max_len, tries=self.tries)
 
   def generate_message_from(self,message):
-    return self.vocabulary.make_sentence_from(message, max(self.max_len, len(message)), self.min_len, state_size=self.state_size, tries=self.tries, similarity=self.similarity, filtr=self.sent)
+    return self.vocabulary.make_sentence_from(message, max(self.max_len, len(message)), self.min_len, state_size=self.state_size, tries=self.tries, similarity=self.similarity, filter=self.sent)
 
   def generate_cached_message(self):
     if (len(self.cache) < self.max_cache) and self.vocabulary:
@@ -240,16 +250,20 @@ class Crispy():
     while self.logged_in:
       if (self.is_message_present()):
         username, message = self.capture_message()
-        if self.is_action(message):
-          username, message = self.capture_action(message)
-          if self.is_target(username):
-            self.answer_to(message)
-        elif self.is_command(message):
-          if self.is_admin(username):
-            self.try_command(message)
-        elif self.is_target(username):
-          self.answer_to(message)
-        self.train(username,message)
+        if self.filter_message(message):
+          if not self.is_bot(username):
+            if username:
+              if self.is_command(message):
+                if self.is_admin(username):
+                  self.try_command(message)
+              elif self.is_target(username) or self.is_trigger(message):
+                self.answer_to(message)
+            else:
+              if self.is_action(message):
+                username, message = self.capture_action(message)
+                if self.is_target(username):
+                  self.answer_to(message)
+            self.train(username,message)
       self.generate_cached_message()
       self.wipe_sent_messages()
       self.save()
