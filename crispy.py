@@ -66,9 +66,9 @@ class Crispy():
           return True
     return False
 
-  def train(self, username, message):
+  def train(self, message):
     for train in self.training:
-        if not self.is_bot(username) and not self.is_trained(train,message) and len(message) > self.min_len:
+        if not self.is_trained(train,message) and len(message) > self.min_len:
           self.training[train](message)
 
   def add_command(self, command, func):
@@ -263,7 +263,8 @@ class Crispy():
                 username, message = self.capture_action(message)
                 if self.is_target(username):
                   self.answer_to(message)
-            self.train(username,message)
+            if not self.is_command(message):
+              self.train(username,message)
       self.generate_cached_message()
       self.wipe_sent_messages()
       self.save()
