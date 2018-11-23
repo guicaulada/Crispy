@@ -264,7 +264,7 @@ class Crispy():
                 if self.is_target(username):
                   self.answer_to(message)
             if not self.is_command(message):
-              self.train(username,message)
+              self.train(message)
       self.generate_cached_message()
       self.wipe_sent_messages()
       self.save()
