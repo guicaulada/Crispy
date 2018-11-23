@@ -253,8 +253,7 @@ class Crispy():
         if self.filter_message(message):
           if not self.is_bot(username):
             if username:
-              if self.is_command(message):
-                if self.is_admin(username):
+              if self.is_command(message) and self.is_admin(username):
                   self.try_command(message)
               elif self.is_target(username) or self.is_trigger(message):
                 self.answer_to(message)
