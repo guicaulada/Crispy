@@ -170,7 +170,7 @@ class Crispy():
       self.vocabulary = self.vocabularies[name]
 
   def add_vocabulary(self, name, file, **kwargs):
-    with open(file) as f:
+    with open(file, 'r', encoding='utf-8') as f:
       text = f.read()
       if (kwargs.get('newline_text')):
         self.vocabularies[name] = NewlineText(text, state_size=self.state_size)
