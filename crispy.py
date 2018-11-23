@@ -132,11 +132,11 @@ class Crispy():
 
   def capture_message(self):
     if ('chat__MessageHandle' in self.browser.find_by_css('.chat__Message').last.html):
-      user = self.browser.find_by_css('.chat__MessageHandle').last.text
+      username = self.browser.find_by_css('.chat__MessageHandle').last.text
     else:
-      user = None
+      username = None
     message = self.browser.find_by_css('.chat__MessageBody').last.text
-    return user, message
+    return username, message
 
   def is_message_present(self):
     return self.browser.is_element_present_by_css('.chat__Message')
@@ -218,7 +218,7 @@ class Crispy():
       self.last_save = self.current_time()
       self.cache = []
       for train in self.training:
-        with open(train, '+w') as f:
+        with open(train, '+w', encoding='utf-8') as f:
           f.write(self.training_text[train])
 
   def force_save(self):
@@ -271,5 +271,5 @@ class Crispy():
 
   def shutdown(self):
     print('Saving and shutting down!')
-    self.force_save()
     self.browser.quit()
+    self.force_save()
