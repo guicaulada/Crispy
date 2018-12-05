@@ -242,6 +242,10 @@ class Crispy():
   def force_wipe(self):
     self.wipe_sent_messages(force=True)
 
+  def spam(self, text):
+    for i in range(15):
+      self.send_message(text)
+
   def scan(self):
     if not self.logged_in:
       self.login()
@@ -264,6 +268,9 @@ class Crispy():
                   self.answer_to(message)
             if not self.is_command(message):
               self.train(message)
+        else:
+          if 'nigger' in message:
+            self.spam('suck my fucking balls hab')
       self.generate_cached_message()
       self.wipe_sent_messages()
       self.save()
