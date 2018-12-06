@@ -286,8 +286,7 @@ class Crispy():
       username, message = self.capture_action(message)
       if self.is_target(username):
         self.answer_to(message)
-      return True
-    return False
+    return username, message
 
   def check_for_routines(self):
     self.generate_cached_message()
@@ -312,7 +311,7 @@ class Crispy():
               if username:
                 self.check_for_triggered(username, message)
               else:
-                self.check_for_action(username, message)
+                username, message = self.check_for_action(username, message)
               self.train(message)
         self.check_for_routines()
         self.sleep()
