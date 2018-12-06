@@ -1,14 +1,19 @@
-from splinter import Browser
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver import Chrome, ChromeOptions
+from selenium.webdriver.common.by import By
 from difflib import SequenceMatcher
-from markov import Text, NewlineText
+from crispy.markov import Text, NewlineText
 import time
 import atexit
 
 class Crispy():
   def __init__(self, **kwargs):
     self.logged_in = False
-    self.last_wipe = self.current_time()
-    self.last_save = self.current_time()
+    self.start_time = self.current_time()
+    self.last_wipe = self.start_time
+    self.last_save = self.start_time
     self.training = {}
     self.training_text = {}
     self.filter = kwargs.get('filter', [])
@@ -16,6 +21,7 @@ class Crispy():
     self.max_cache = kwargs.get('max_cache', 100)
     self.max_len = kwargs.get('max_len', 60)
     self.min_len = kwargs.get('min_len', 10)
+    self.sleep_interval = kwargs.get('sleep_interval', 0.25)
     self.wipe_interval = kwargs.get('wipe_interval', 10)
     self.save_interval = kwargs.get('save_interval', 10)
     self.sensitivity = kwargs.get('sensitivity', 0.5)
@@ -31,10 +37,16 @@ class Crispy():
     self.sent = []
     self.vocabulary = None
     self.vocabularies = {}
-    self.browser = Browser('chrome', headless=True)
+    options=ChromeOptions()
+    options.add_argument('headless')
+    options.add_argument('log-level=3')
+    self.browser = Chrome(chrome_options=options)
     self.url = 'https://jumpin.chat/'+str(self.room)
     self.commands = {}
     atexit.register(self.shutdown)
+
+  def sleep(self):
+    time.sleep(self.sleep_interval)
 
   def is_action(self, message):
     if not message:
@@ -121,48 +133,55 @@ class Crispy():
   def has_cache(self):
     return len(self.cache) > 0
 
+  def is_message_present(self):
+    try:
+      self.browser.find_element(By.CSS_SELECTOR, '.chat__MessageHandle')
+    except NoSuchElementException:
+      return False
+    else:
+      return True
+
   def send_message(self, message):
     self.sent.append(message)
-    self.browser.find_by_css('.chat__Input').fill(message)
-    self.browser.find_by_css('.chat__InputSubmit').click()
+    self.browser.find_element(By.CSS_SELECTOR, '.chat__Input').send_keys(message)
+    self.browser.find_element(By.CSS_SELECTOR, '.chat__InputSubmit').click()
 
   def send_cached_message(self):
     if self.has_cache():
       self.send_message(self.cache.pop(0))
 
   def capture_message(self):
-    if ('chat__MessageHandle' in self.browser.find_by_css('.chat__Message').last.html):
-      username = self.browser.find_by_css('.chat__MessageHandle').last.text
+    if ('chat__MessageHandle' in self.browser.find_elements(By.CSS_SELECTOR, '.chat__Message')[-1].get_attribute('innerHTML')):
+      username = self.browser.find_elements(By.CSS_SELECTOR, '.chat__MessageHandle')[-1].text
     else:
       username = None
-    message = self.browser.find_by_css('.chat__MessageBody').last.text
+    message = self.browser.find_elements(By.CSS_SELECTOR, '.chat__MessageBody')[-1].text
     return username, message
 
-  def is_message_present(self):
-    return self.browser.is_element_present_by_css('.chat__Message')
+  def wait_for_element(self, by, element, t=10):
+    return WebDriverWait(self.browser, t).until(EC.presence_of_element_located((by, element)))
 
   def login(self):
-    print('Logging in to '+self.url)
-    self.browser.visit(self.url)
-    time.sleep(0.25)
-    self.browser.find_by_css('.form__Input-inline').fill(self.bot)
-    time.sleep(0.25)
-    self.browser.find_by_text('Go').click()
-    time.sleep(0.25)
-    self.browser.find_by_css('.fa-gear').click()
-    time.sleep(0.25)
-    self.browser.find_by_id('enableyoutubevideos').click()
-    time.sleep(0.25)
-    self.browser.find_by_css('.fa-gear').click()
-    time.sleep(0.25)
-    self.browser.find_by_id('enabledarktheme').click()
-    time.sleep(0.25)
-    self.browser.find_by_css('.chat__HeaderOption-streamVolume').click()
-    time.sleep(0.25)
-    self.browser.find_by_css('.chat__HeaderOption-sounds').click()
-    time.sleep(0.25)
-    self.browser.find_by_text('Close cams').click()
-    print('Login complete! Bot is ready to receive messages!')
+    print('\nLogging in to '+self.url)
+    self.browser.get(self.url)
+    self.wait_for_element(By.CSS_SELECTOR, '.form__Input-inline').send_keys(self.bot)
+    self.sleep()
+    self.browser.find_element(By.XPATH, '//button[text()="Go"]').click()
+    self.sleep()
+    self.browser.find_element(By.CSS_SELECTOR, '.fa-gear').click()
+    self.sleep()
+    self.browser.find_element(By.ID, 'enableyoutubevideos').click()
+    self.sleep()
+    self.browser.find_element(By.CSS_SELECTOR, '.fa-gear').click()
+    self.sleep()
+    self.browser.find_element(By.ID, 'enabledarktheme').click()
+    self.sleep()
+    self.browser.find_element(By.CSS_SELECTOR, '.chat__HeaderOption-streamVolume').click()
+    self.sleep()
+    self.browser.find_element(By.CSS_SELECTOR, '.chat__HeaderOption-sounds').click()
+    self.sleep()
+    self.browser.find_element(By.XPATH, '//span[text()="Close cams"]').click()
+    print('\nLogin complete! Bot is ready to receive messages!\n')
     self.logged_in = True
 
   def set_vocabulary(self,name):
@@ -242,41 +261,65 @@ class Crispy():
   def force_wipe(self):
     self.wipe_sent_messages(force=True)
 
-  def spam(self, text):
-    for i in range(15):
+  def spam(self, text, amount):
+    for i in range(amount):
       self.send_message(text)
 
-  def scan(self):
+  def forget(self, text):
+    for train in self.training:
+      self.training_text[train] = '\n'.join([message for message in self.training_text[train].split('\n') if text not in message])
+
+  def check_for_command(self, username, message):
+    if self.is_command(message) and self.is_admin(username):
+      self.try_command(message)
+      return True
+    return False
+
+  def check_for_triggered(self, username, message):
+    if self.is_target(username) or self.is_trigger(message):
+      self.answer_to(message)
+      return True
+    return False
+
+  def check_for_action(self, username, message):
+    if self.is_action(message):
+      username, message = self.capture_action(message)
+      if self.is_target(username):
+        self.answer_to(message)
+      return True
+    return False
+
+  def check_for_routines(self):
+    self.generate_cached_message()
+    self.wipe_sent_messages()
+    self.save()
+
+  def wait_for_login(self):
     if not self.logged_in:
       self.login()
     while not self.logged_in:
-      time.sleep(0.25)
-    while self.logged_in:
-      if (self.is_message_present()):
-        username, message = self.capture_message()
-        if self.filter_message(message):
+      self.sleep()
+
+  def scan(self):
+    try:
+      self.wait_for_login()
+      while self.logged_in:
+        if (self.is_message_present()):
+          username, message = self.capture_message()
           if not self.is_bot(username):
-            if username:
-              if self.is_command(message) and self.is_admin(username):
-                  self.try_command(message)
-              elif self.is_target(username) or self.is_trigger(message):
-                self.answer_to(message)
-            else:
-              if self.is_action(message):
-                username, message = self.capture_action(message)
-                if self.is_target(username):
-                  self.answer_to(message)
-            if not self.is_command(message):
+            is_command = self.check_for_command(username, message)
+            if not is_command and self.filter_message(message):
+              if username:
+                self.check_for_triggered(username, message)
+              else:
+                self.check_for_action(username, message)
               self.train(message)
-        else:
-          if 'nigger' in message:
-            self.spam('suck my fucking balls hab')
-      self.generate_cached_message()
-      self.wipe_sent_messages()
-      self.save()
-      time.sleep(0.25)
+        self.check_for_routines()
+        self.sleep()
+    except KeyboardInterrupt:
+      pass
 
   def shutdown(self):
-    print('Saving and shutting down!')
+    print('Saving and shutting down!\n')
     self.browser.quit()
     self.force_save()

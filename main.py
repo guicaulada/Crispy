@@ -1,6 +1,6 @@
 
 from config import *
-from commands import *
+from crispy.commands import *
 from crispy import Crispy
 
 crispy = Crispy(
@@ -10,9 +10,9 @@ crispy = Crispy(
   similarity=similarity, wipe_interval=wipe_interval, max_cache=max_cache
 )
 
-crispy.add_vocabulary('sherlock', 'sherlock.txt')
-crispy.add_vocabulary('biglebowski', 'biglebowski.txt')
-crispy.add_vocabulary('custom', 'custom.txt', newline_text=True, training=True)
+crispy.add_vocabulary('sherlock', 'models/sherlock.txt')
+crispy.add_vocabulary('biglebowski', 'models/biglebowski.txt')
+crispy.add_vocabulary('custom', 'models/custom.txt', newline_text=True, training=True)
 
 crispy.set_vocabulary('custom')
 
@@ -21,5 +21,6 @@ crispy.add_command('wipe', wipe_command)
 crispy.add_command('crispy', crispy_command)
 crispy.add_command('target', target_command)
 crispy.add_command('untarget', untarget_command)
+crispy.add_command('forget', forget_command)
 
 crispy.scan()

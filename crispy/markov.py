@@ -1,7 +1,14 @@
 from markovify import Text as T
 from difflib import SequenceMatcher
-import nltk
 import re
+import os
+os.environ['FOR_DISABLE_CONSOLE_CTRL_HANDLER'] = 'T'
+
+print('\nUpdating NLTK data...\n')
+import nltk
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+print('\nUpdate complete!')
 
 class Text(T):
   def make_sentence_from(self, message, max_chars, min_chars=0, **kwargs):

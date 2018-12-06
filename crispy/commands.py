@@ -33,3 +33,11 @@ def crispy_command(**kwargs):
     args = kwargs.get('args')
     if args:
       crispy.answer_to(' '.join(args))
+
+def forget_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  if crispy:
+    args = kwargs.get('args')
+    if args:
+      crispy.answer_to('forget')
+      crispy.forget(' '.join(args))
