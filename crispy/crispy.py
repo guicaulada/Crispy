@@ -281,13 +281,6 @@ class Crispy():
       return True
     return False
 
-  def check_for_action(self, username, message):
-    if self.is_action(message):
-      username, message = self.capture_action(message)
-      if self.is_target(username):
-        self.answer_to(message)
-    return username, message
-
   def check_for_routines(self):
     self.generate_cached_message()
     self.wipe_sent_messages()
@@ -310,8 +303,9 @@ class Crispy():
             if not is_command and self.filter_message(message):
               if username:
                 self.check_for_triggered(username, message)
-              else:
-                username, message = self.check_for_action(username, message)
+              elif self.is_action(message):
+                username, message = self.capture_action(message)
+                self.check_for_triggered(username, message)
               self.train(message)
         self.check_for_routines()
         self.sleep()
