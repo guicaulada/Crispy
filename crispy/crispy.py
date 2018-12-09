@@ -29,24 +29,29 @@ class Crispy():
     self.state_size = kwargs.get('state_size', 2)
     self.targets = kwargs.get('targets', [])
     self.triggers = kwargs.get('triggers', [])
+    self.banned = kwargs.get('banned', [])
+    self.ban_message = kwargs.get('ban_message', ':)')
     self.triggered = kwargs.get('triggered', 0.0)
     self.bot = kwargs.get('bot', 'Crispybot')
     self.room = kwargs.get('room', self.bot)
     self.admins = kwargs.get('admins', [])
+    self.username = kwargs.get('username', None)
+    self.password = kwargs.get('password', None)
     self.cache = []
     self.sent = []
     self.vocabulary = None
     self.vocabularies = {}
     options=ChromeOptions()
-    options.add_argument('headless')
+    #options.add_argument('headless')
     options.add_argument('log-level=3')
     self.browser = Chrome(chrome_options=options)
     self.url = 'https://jumpin.chat/'+str(self.room)
+    self.login_url = 'https://jumpin.chat/login'
     self.commands = {}
     atexit.register(self.shutdown)
 
-  def sleep(self):
-    time.sleep(self.sleep_interval)
+  def sleep(self, ratio=1):
+    time.sleep(self.sleep_interval*ratio)
 
   def is_action(self, message):
     if not message:
@@ -75,6 +80,15 @@ class Crispy():
     for t in self.triggers:
       for m in message.split():
         if SequenceMatcher(None, t.lower(), m.lower()).ratio() > min(max(1-self.triggered,0),1):
+          return True
+    return False
+
+  def is_banned(self, message):
+    if not message:
+      return False
+    for t in self.banned:
+      for m in message.split():
+        if SequenceMatcher(None, t.lower(), m.lower()).ratio() > min(max(1-self.triggered, 0), 1):
           return True
     return False
 
@@ -161,7 +175,19 @@ class Crispy():
   def wait_for_element(self, by, element, t=10):
     return WebDriverWait(self.browser, t).until(EC.presence_of_element_located((by, element)))
 
+  def has_user_account(self):
+    return self.username and self.password
+
   def login(self):
+    if self.has_user_account():
+      self.browser.get(self.login_url)
+      self.wait_for_element(By.ID, 'username').send_keys(self.username)
+      self.sleep()
+      self.browser.find_element(By.ID, 'password').send_keys(self.password)
+      self.sleep()
+      self.browser.find_element(By.XPATH, '//button[text()="Log In"]').click()
+      print('\nLogging in to account '+self.username)
+      self.sleep()
     print('\nLogging in to '+self.url)
     self.browser.get(self.url)
     self.wait_for_element(By.CSS_SELECTOR, '.form__Input-inline').send_keys(self.bot)
@@ -183,6 +209,13 @@ class Crispy():
     self.browser.find_element(By.XPATH, '//span[text()="Close cams"]').click()
     print('\nLogin complete! Bot is ready to receive messages!\n')
     self.logged_in = True
+
+  def ban(self, username):
+    self.browser.find_element(By.XPATH, '//div[contains(@class, "userList__UserHandle") and text()="'+username+'"]').click()
+    self.sleep()
+    self.browser.find_element(By.XPATH, '//button[text()="Ban user"]').click()
+    self.sleep()
+    self.send_message(self.ban_message)
 
   def set_vocabulary(self,name):
     if self.vocabularies.get(name):
@@ -281,6 +314,12 @@ class Crispy():
       return True
     return False
 
+  def check_for_banned(self, username, message):
+    if self.is_banned(message):
+      self.ban(username)
+      return True
+    return False
+
   def check_for_routines(self):
     self.generate_cached_message()
     self.wipe_sent_messages()
@@ -300,13 +339,16 @@ class Crispy():
           username, message = self.capture_message()
           if not self.is_bot(username):
             is_command = self.check_for_command(username, message)
-            if not is_command and self.filter_message(message):
-              if username:
-                self.check_for_triggered(username, message)
-              elif self.is_action(message):
-                username, message = self.capture_action(message)
-                self.check_for_triggered(username, message)
-              self.train(message)
+            if not is_command:
+              if (self.has_user_account):
+                self.check_for_banned(username, message)
+              if self.filter_message(message):
+                if username:
+                  self.check_for_triggered(username, message)
+                elif self.is_action(message):
+                  username, message = self.capture_action(message)
+                  self.check_for_triggered(username, message)
+                self.train(message)
         self.check_for_routines()
         self.sleep()
     except KeyboardInterrupt:
