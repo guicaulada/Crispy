@@ -211,7 +211,10 @@ class Crispy():
     self.logged_in = True
 
   def ban(self, username):
-    self.browser.find_element(By.XPATH, '//div[contains(@class, "userList__UserHandle") and text()="'+username+'"]').click()
+    user = self.browser.find_element(By.XPATH, '//div[contains(@class, "userList__UserHandle") and text()="'+username+'"]')
+    while (not user.is_displayed()):
+      self.browser.execute_script("var mt = Number(document.getElementsByClassName('scrollarea-content')[1].style.marginTop.replace('px', '')); document.getElementsByClassName('scrollarea-content')[1].style.marginTop = (mt-10)+'px';")
+    user.click()
     self.sleep()
     self.browser.find_element(By.XPATH, '//button[text()="Ban user"]').click()
     self.sleep()
