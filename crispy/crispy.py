@@ -216,9 +216,13 @@ class Crispy():
       self.browser.execute_script("var mt = Number(document.getElementsByClassName('scrollarea-content')[1].style.marginTop.replace('px', '')); document.getElementsByClassName('scrollarea-content')[1].style.marginTop = (mt-10)+'px';")
     user.click()
     self.sleep()
-    self.browser.find_element(By.XPATH, '//button[text()="Ban user"]').click()
+    try:
+      self.browser.find_element(By.XPATH, '//button[text()="Ban user"]').click()
+    except NoSuchElementException:
+      pass
     self.sleep()
     self.send_message(self.ban_message)
+
 
   def set_vocabulary(self,name):
     if self.vocabularies.get(name):
