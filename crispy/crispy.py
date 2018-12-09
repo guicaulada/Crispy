@@ -42,7 +42,7 @@ class Crispy():
     self.vocabulary = None
     self.vocabularies = {}
     options=ChromeOptions()
-    #options.add_argument('headless')
+    options.add_argument('headless')
     options.add_argument('log-level=3')
     self.browser = Chrome(chrome_options=options)
     self.url = 'https://jumpin.chat/'+str(self.room)
