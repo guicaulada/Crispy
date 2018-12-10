@@ -211,17 +211,18 @@ class Crispy():
     self.logged_in = True
 
   def ban(self, username):
-    user = self.browser.find_element(By.XPATH, '//div[contains(@class, "userList__UserHandle") and text()="'+username+'"]')
-    while (not user.is_displayed()):
-      self.browser.execute_script("var mt = Number(document.getElementsByClassName('scrollarea-content')[1].style.marginTop.replace('px', '')); document.getElementsByClassName('scrollarea-content')[1].style.marginTop = (mt-10)+'px';")
-    user.click()
-    self.sleep()
-    try:
-      self.browser.find_element(By.XPATH, '//button[text()="Ban user"]').click()
-    except NoSuchElementException:
-      pass
-    self.sleep()
-    self.send_message(self.ban_message)
+    if username:
+      user = self.browser.find_element(By.XPATH, '//div[contains(@class, "userList__UserHandle") and text()="'+username+'"]')
+      while (not user.is_displayed()):
+        self.browser.execute_script("var mt = Number(document.getElementsByClassName('scrollarea-content')[1].style.marginTop.replace('px', '')); document.getElementsByClassName('scrollarea-content')[1].style.marginTop = (mt-10)+'px';")
+      user.click()
+      self.sleep()
+      try:
+        self.browser.find_element(By.XPATH, '//button[text()="Ban user"]').click()
+      except NoSuchElementException:
+        pass
+      self.sleep()
+      self.send_message(self.ban_message)
 
 
   def set_vocabulary(self,name):
@@ -347,14 +348,14 @@ class Crispy():
           if not self.is_bot(username):
             is_command = self.check_for_command(username, message)
             if not is_command:
-              if (self.has_user_account):
-                self.check_for_banned(username, message)
               if self.filter_message(message):
                 if username:
                   self.check_for_triggered(username, message)
                 elif self.is_action(message):
                   username, message = self.capture_action(message)
                   self.check_for_triggered(username, message)
+                if (self.has_user_account):
+                  self.check_for_banned(username, message)
                 self.train(message)
         self.check_for_routines()
         self.sleep()
