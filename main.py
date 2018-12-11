@@ -24,5 +24,6 @@ crispy.add_command('crispy', crispy_command)
 crispy.add_command('target', target_command)
 crispy.add_command('untarget', untarget_command)
 crispy.add_command('forget', forget_command)
+crispy.add_command('refresh', refresh_command)
 
 crispy.scan()

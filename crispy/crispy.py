@@ -183,36 +183,40 @@ class Crispy():
     if self.has_user_account():
       self.browser.get(self.login_url)
       self.wait_for_element(By.ID, 'username').send_keys(self.username)
-      self.sleep()
+      self.sleep(2)
       self.browser.find_element(By.ID, 'password').send_keys(self.password)
-      self.sleep()
+      self.sleep(2)
       self.browser.find_element(By.XPATH, '//button[text()="Log In"]').click()
       print('\nLogging in to account '+self.username)
-      self.sleep()
+      self.sleep(2)
     self.connect()
-    self.logged_in = True
 
   def connect(self):
     print('\nConnecting to '+self.url)
     self.last_refresh = self.current_time()
     self.browser.get(self.url)
-    self.wait_for_element(By.CSS_SELECTOR, '.form__Input-inline').send_keys(self.bot)
-    self.sleep()
+    nickname = self.wait_for_element(By.CSS_SELECTOR, '.form__Input-inline')
+    nickname.clear()
+    self.sleep(2)
+    nickname.send_keys(self.bot)
+    self.sleep(2)
     self.browser.find_element(By.XPATH, '//button[text()="Go"]').click()
-    self.sleep()
-    self.browser.find_element(By.CSS_SELECTOR, '.fa-gear').click()
-    self.sleep()
-    self.browser.find_element(By.ID, 'enableyoutubevideos').click()
-    self.sleep()
-    self.browser.find_element(By.CSS_SELECTOR, '.fa-gear').click()
-    self.sleep()
-    self.browser.find_element(By.ID, 'enabledarktheme').click()
-    self.sleep()
-    self.browser.find_element(By.CSS_SELECTOR, '.chat__HeaderOption-streamVolume').click()
-    self.sleep()
-    self.browser.find_element(By.CSS_SELECTOR, '.chat__HeaderOption-sounds').click()
-    self.sleep()
-    self.browser.find_element(By.XPATH, '//span[text()="Close cams"]').click()
+    if not self.logged_in:
+      self.sleep(2)
+      self.browser.find_element(By.CSS_SELECTOR, '.fa-gear').click()
+      self.sleep(2)
+      self.browser.find_element(By.ID, 'enableyoutubevideos').click()
+      self.sleep(2)
+      self.browser.find_element(By.CSS_SELECTOR, '.fa-gear').click()
+      self.sleep(2)
+      self.browser.find_element(By.ID, 'enabledarktheme').click()
+      self.sleep(2)
+      self.browser.find_element(By.CSS_SELECTOR, '.chat__HeaderOption-streamVolume').click()
+      self.sleep(2)
+      self.browser.find_element(By.CSS_SELECTOR, '.chat__HeaderOption-sounds').click()
+      self.sleep(2)
+      self.browser.find_element(By.XPATH, '//span[text()="Close cams"]').click()
+      self.logged_in = True
     print('\nLogin complete! Bot is ready to receive messages!\n')
 
   def ban(self, username):
@@ -338,6 +342,8 @@ class Crispy():
     if (self.current_time()-self.last_refresh > self.refresh_interval*60000) or kwargs.get('force'):
       self.connect()
 
+  def force_refresh(self):
+    self.refresh(force=True)
 
   def check_for_routines(self):
     self.generate_cached_message()

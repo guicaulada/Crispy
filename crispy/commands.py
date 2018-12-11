@@ -5,6 +5,12 @@ def save_command(**kwargs):
     crispy.answer_to('save')
     crispy.force_save()
 
+def refresh_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  if crispy:
+    crispy.answer_to('refresh')
+    crispy.force_refresh()
+
 def target_command(**kwargs):
   crispy = kwargs.get('crispy')
   if crispy:
