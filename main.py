@@ -8,7 +8,8 @@ crispy = Crispy(
   admins=admins, save_interval=save_interval, min_len=min_len, triggers=triggers,
   state_size=state_size, tries=tries, sensitivity=sensitivity, triggered=triggered,
   similarity=similarity, wipe_interval=wipe_interval, max_cache=max_cache,
-  username=username, password=password, banned=banned, ban_message=ban_message
+  username=username, password=password, banned=banned, ban_message=ban_message,
+  refresh_interval=refresh_interval
 )
 
 crispy.add_vocabulary('sherlock', 'models/sherlock.txt')

@@ -21,6 +21,7 @@ class Crispy():
     self.max_cache = kwargs.get('max_cache', 100)
     self.max_len = kwargs.get('max_len', 60)
     self.min_len = kwargs.get('min_len', 10)
+    self.refresh_interval = kwargs.get('refresh_interval', 10)
     self.sleep_interval = kwargs.get('sleep_interval', 0.25)
     self.wipe_interval = kwargs.get('wipe_interval', 10)
     self.save_interval = kwargs.get('save_interval', 10)
@@ -188,7 +189,12 @@ class Crispy():
       self.browser.find_element(By.XPATH, '//button[text()="Log In"]').click()
       print('\nLogging in to account '+self.username)
       self.sleep()
-    print('\nLogging in to '+self.url)
+    self.connect()
+    self.logged_in = True
+
+  def connect(self):
+    print('\nConnecting to '+self.url)
+    self.last_refresh = self.current_time()
     self.browser.get(self.url)
     self.wait_for_element(By.CSS_SELECTOR, '.form__Input-inline').send_keys(self.bot)
     self.sleep()
@@ -208,7 +214,6 @@ class Crispy():
     self.sleep()
     self.browser.find_element(By.XPATH, '//span[text()="Close cams"]').click()
     print('\nLogin complete! Bot is ready to receive messages!\n')
-    self.logged_in = True
 
   def ban(self, username):
     if username:
@@ -328,10 +333,16 @@ class Crispy():
       return True
     return False
 
+  def refresh(self, **kwargs):
+    if (self.current_time()-self.last_refresh > self.refresh_interval*60000) or kwargs.get('force'):
+      self.connect()
+
+
   def check_for_routines(self):
     self.generate_cached_message()
     self.wipe_sent_messages()
     self.save()
+    self.refresh()
 
   def wait_for_login(self):
     if not self.logged_in:
