@@ -22,7 +22,7 @@ class Crispy():
     self.max_len = kwargs.get('max_len', 60)
     self.min_len = kwargs.get('min_len', 10)
     self.refresh_interval = kwargs.get('refresh_interval', 10)
-    self.sleep_interval = kwargs.get('sleep_interval', 0.25)
+    self.sleep_interval = kwargs.get('sleep_interval', 0.1)
     self.wipe_interval = kwargs.get('wipe_interval', 10)
     self.save_interval = kwargs.get('save_interval', 10)
     self.sensitivity = kwargs.get('sensitivity', 0.5)
@@ -221,12 +221,13 @@ class Crispy():
       while (not user.is_displayed()):
         self.browser.execute_script("var mt = Number(document.getElementsByClassName('scrollarea-content')[1].style.marginTop.replace('px', '')); document.getElementsByClassName('scrollarea-content')[1].style.marginTop = (mt-10)+'px';")
       user.click()
-      self.sleep()
+      self.sleep(0.5)
       try:
+        self.browser.execute_script("var mt = Number(document.getElementsByClassName('scrollarea-content')[1].style.marginTop.replace('px', '')); document.getElementsByClassName('scrollarea-content')[1].style.marginTop = '0px';")
         self.browser.find_element(By.XPATH, '//button[text()="Ban user"]').click()
       except NoSuchElementException:
-        pass
-      self.sleep()
+        print('\nTried to ban user {} but couldn\'t!'.format(username))
+      self.sleep(0.5)
       self.send_message(self.ban_message)
 
 
@@ -365,9 +366,9 @@ class Crispy():
                 elif self.is_action(message):
                   username, message = self.capture_action(message)
                   self.check_for_triggered(username, message)
-                if (self.has_user_account):
-                  self.check_for_banned(username, message)
                 self.train(message)
+              elif (self.has_user_account):
+                self.check_for_banned(username, message)
         self.check_for_routines()
         self.sleep()
     except KeyboardInterrupt:
