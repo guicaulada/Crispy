@@ -86,7 +86,7 @@ class Crispy():
     return False
 
   def is_banned(self, username, message):
-    if not message:
+    if not message or not username:
       return False
     for t in self.banned:
       if t.lower() in message.lower() or t.lower() in username.lower():
