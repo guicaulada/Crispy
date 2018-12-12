@@ -16,11 +16,11 @@ class Crispy():
     self.last_save = self.start_time
     self.training = {}
     self.training_text = {}
-    self.filter = kwargs.get('filter', [])
     self.tries = kwargs.get('tries', 10)
     self.max_cache = kwargs.get('max_cache', 100)
     self.max_len = kwargs.get('max_len', 60)
     self.min_len = kwargs.get('min_len', 10)
+    self.name_change = kwargs.get('name_change', ' changed their name to ')
     self.refresh_interval = kwargs.get('refresh_interval', 10)
     self.sleep_interval = kwargs.get('sleep_interval', 0.1)
     self.wipe_interval = kwargs.get('wipe_interval', 10)
@@ -28,13 +28,14 @@ class Crispy():
     self.sensitivity = kwargs.get('sensitivity', 0.5)
     self.similarity = kwargs.get('similarity', 0.5)
     self.state_size = kwargs.get('state_size', 2)
-    self.targets = kwargs.get('targets', [])
+    self.bot = kwargs.get('bot', 'Crispybot')
     self.triggers = kwargs.get('triggers', [])
+    self.targets = kwargs.get('targets', [])
     self.banned = kwargs.get('banned', [])
+    self.filter = kwargs.get('filter', [])+self.banned+[self.bot]+[self.name_change]
     self.ban_message = kwargs.get('ban_message', ':)')
     self.deny_message = kwargs.get('deny_message', ':)')
     self.triggered = kwargs.get('triggered', 0.0)
-    self.bot = kwargs.get('bot', 'Crispybot')
     self.room = kwargs.get('room', self.bot)
     self.admins = kwargs.get('admins', [])
     self.username = kwargs.get('username', None)
@@ -150,7 +151,7 @@ class Crispy():
         profile = self.browser.find_element(By.CSS_SELECTOR, '.dropdown__Option-header').text
         return profile in self.admins
       except NoSuchElementException:
-        print('Tried to check user {username} for admin but profile not found! Is {username} a guest ?\n'.format(username=username))
+        print('\nTried to check user {username} for admin but profile not found! Is {username} a guest ?'.format(username=username))
         self.send_message(self.deny_message)
       self.browser.execute_script("document.getElementsByClassName('scrollarea-content')[1].style.marginTop = '0px';")
     return False
@@ -160,7 +161,7 @@ class Crispy():
 
   def is_message_present(self):
     try:
-      self.browser.find_element(By.CSS_SELECTOR, '.chat__MessageHandle')
+      self.browser.find_element(By.CSS_SELECTOR, '.chat__Message')
     except NoSuchElementException:
       return False
     else:
@@ -227,7 +228,7 @@ class Crispy():
       self.sleep(2)
       self.browser.find_element(By.XPATH, '//span[text()="Close cams"]').click()
       self.logged_in = True
-    print('\nLogin complete! Bot is ready to receive messages!\n')
+    print('\nLogin complete! Bot is ready to receive messages!')
 
   def click_username(self, username):
     user = self.browser.find_element(By.XPATH, '//div[contains(@class, "userList__UserHandle") and text()="'+username+'"]')
@@ -242,7 +243,7 @@ class Crispy():
       try:
         self.browser.find_element(By.XPATH, '//button[text()="Ban user"]').click()
       except NoSuchElementException:
-        print('Tried to ban user {username} but ban button not found! Is {username} a mod ?\n'.format(username=username))
+        print('\nTried to ban user {username} but ban button not found! Is {username} a mod ?'.format(username=username))
       self.browser.execute_script("document.getElementsByClassName('scrollarea-content')[1].style.marginTop = '0px';")
       self.sleep(0.5)
       self.send_message(self.ban_message)
@@ -370,6 +371,13 @@ class Crispy():
     while not self.logged_in:
       self.sleep()
 
+  def get_name_change(self, username, message):
+    if not username and message:
+      usernames = message.split(self.name_change)
+      if len(usernames) == 2:
+        username = usernames[1]
+    return username
+
   def scan(self):
     try:
       self.wait_for_login()
@@ -385,6 +393,7 @@ class Crispy():
                 self.check_for_triggered(username, message)
                 self.train(message)
               elif (self.has_user_account):
+                username = self.get_name_change(username, message)
                 self.check_for_banned(username, message)
         self.check_for_routines()
         self.sleep()
@@ -392,6 +401,6 @@ class Crispy():
       pass
 
   def shutdown(self):
-    print('Saving and shutting down!\n')
+    print('\nSaving and shutting down!\n')
     self.browser.quit()
     self.force_save()
