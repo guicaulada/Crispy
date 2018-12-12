@@ -60,9 +60,9 @@ class Crispy():
       return False
     return message[0] == '*'
 
-  def filter_message(self, message):
+  def filter_message(self, username, message):
     for f in self.filter:
-      if f.lower() in message.lower():
+      if f.lower() in message.lower() or f.lower() in username.lower():
         return False
     return True
 
@@ -85,12 +85,11 @@ class Crispy():
           return True
     return False
 
-  def is_banned(self, message):
+  def is_banned(self, username, message):
     if not message:
       return False
     for t in self.banned:
-      for m in message.split():
-        if SequenceMatcher(None, t.lower(), m.lower()).ratio() > min(max(1-self.triggered, 0), 1):
+      if t.lower() in message.lower() or t.lower() in username.lower():
           return True
     return False
 
@@ -345,7 +344,7 @@ class Crispy():
     return False
 
   def check_for_banned(self, username, message):
-    if self.is_banned(message):
+    if self.is_banned(username, message):
       self.ban(username)
       return True
     return False
@@ -378,7 +377,7 @@ class Crispy():
           if not self.is_bot(username):
             is_command = self.check_for_command(username, message)
             if not is_command:
-              if self.filter_message(message):
+              if self.filter_message(username, message):
                 if username:
                   self.check_for_triggered(username, message)
                 elif self.is_action(message):
