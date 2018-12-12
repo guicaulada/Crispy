@@ -55,12 +55,14 @@ class Crispy():
   def sleep(self, ratio=1):
     time.sleep(self.sleep_interval*ratio)
 
-  def is_action(self, message):
+  def is_action(self, username, message):
     if not message:
       return False
-    return message[0] == '*'
+    return (not username and message[0] == '*')
 
   def filter_message(self, username, message):
+    if not username:
+      username = ''
     for f in self.filter:
       if f.lower() in message.lower() or f.lower() in username.lower():
         return False
@@ -377,12 +379,10 @@ class Crispy():
           if not self.is_bot(username):
             is_command = self.check_for_command(username, message)
             if not is_command:
+              if self.is_action(username, message):
+                username, message = self.capture_action(message)
               if self.filter_message(username, message):
-                if username:
-                  self.check_for_triggered(username, message)
-                elif self.is_action(message):
-                  username, message = self.capture_action(message)
-                  self.check_for_triggered(username, message)
+                self.check_for_triggered(username, message)
                 self.train(message)
               elif (self.has_user_account):
                 self.check_for_banned(username, message)
