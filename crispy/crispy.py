@@ -32,6 +32,7 @@ class Crispy():
     self.triggers = kwargs.get('triggers', [])
     self.banned = kwargs.get('banned', [])
     self.ban_message = kwargs.get('ban_message', ':)')
+    self.deny_message = kwargs.get('deny_message', ':)')
     self.triggered = kwargs.get('triggered', 0.0)
     self.bot = kwargs.get('bot', 'Crispybot')
     self.room = kwargs.get('room', self.bot)
@@ -141,9 +142,17 @@ class Crispy():
           self.targets.remove(t)
 
   def is_admin(self,username):
-    if not username:
-      return False
-    return username.lower() in self.admins
+    if username:
+      self.click_username(username)
+      try:
+        self.browser.find_element(By.XPATH, '//button[text()="Profile"]')
+        profile = self.browser.find_element(By.CSS_SELECTOR, '.dropdown__Option-header').text
+        return profile in self.admins
+      except NoSuchElementException:
+        print('Tried to check user {username} for admin but profile not found! Is {username} a guest ?\n'.format(username=username))
+        self.send_message(self.deny_message)
+      self.browser.execute_script("document.getElementsByClassName('scrollarea-content')[1].style.marginTop = '0px';")
+    return False
 
   def has_cache(self):
     return len(self.cache) > 0
@@ -219,18 +228,21 @@ class Crispy():
       self.logged_in = True
     print('\nLogin complete! Bot is ready to receive messages!\n')
 
+  def click_username(self, username):
+    user = self.browser.find_element(By.XPATH, '//div[contains(@class, "userList__UserHandle") and text()="'+username+'"]')
+    while (not user.is_displayed()):
+      self.browser.execute_script("var mt = Number(document.getElementsByClassName('scrollarea-content')[1].style.marginTop.replace('px', '')); document.getElementsByClassName('scrollarea-content')[1].style.marginTop = (mt-10)+'px';")
+    user.click()
+    self.sleep(0.5)
+
   def ban(self, username):
     if username:
-      user = self.browser.find_element(By.XPATH, '//div[contains(@class, "userList__UserHandle") and text()="'+username+'"]')
-      while (not user.is_displayed()):
-        self.browser.execute_script("var mt = Number(document.getElementsByClassName('scrollarea-content')[1].style.marginTop.replace('px', '')); document.getElementsByClassName('scrollarea-content')[1].style.marginTop = (mt-10)+'px';")
-      user.click()
-      self.sleep(0.5)
+      self.click_username(username)
       try:
-        self.browser.execute_script("var mt = Number(document.getElementsByClassName('scrollarea-content')[1].style.marginTop.replace('px', '')); document.getElementsByClassName('scrollarea-content')[1].style.marginTop = '0px';")
         self.browser.find_element(By.XPATH, '//button[text()="Ban user"]').click()
       except NoSuchElementException:
-        print('\nTried to ban user {} but couldn\'t!'.format(username))
+        print('Tried to ban user {username} but ban button not found! Is {username} a mod ?\n'.format(username=username))
+      self.browser.execute_script("document.getElementsByClassName('scrollarea-content')[1].style.marginTop = '0px';")
       self.sleep(0.5)
       self.send_message(self.ban_message)
 
