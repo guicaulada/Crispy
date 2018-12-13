@@ -1,5 +1,5 @@
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, WebDriverException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
@@ -153,7 +153,6 @@ class Crispy():
       except NoSuchElementException:
         print('\nTried to check user {username} for admin but profile not found! Is {username} a guest ?'.format(username=username))
         self.send_message(self.deny_message)
-      self.browser.execute_script("document.getElementsByClassName('scrollarea-content')[1].style.marginTop = '0px';")
     return False
 
   def has_cache(self):
@@ -194,12 +193,12 @@ class Crispy():
     if self.has_user_account():
       self.browser.get(self.login_url)
       self.wait_for_element(By.ID, 'username').send_keys(self.username)
-      self.sleep(2)
+      self.sleep(2.5)
       self.browser.find_element(By.ID, 'password').send_keys(self.password)
-      self.sleep(2)
+      self.sleep(2.5)
       self.browser.find_element(By.XPATH, '//button[text()="Log In"]').click()
       print('\nLogging in to account '+self.username)
-      self.sleep(2)
+      self.sleep(2.5)
     self.connect()
 
   def connect(self):
@@ -208,34 +207,41 @@ class Crispy():
     self.browser.get(self.url)
     nickname = self.wait_for_element(By.CSS_SELECTOR, '.form__Input-inline')
     nickname.clear()
-    self.sleep(2)
+    self.sleep(2.5)
     nickname.send_keys(self.bot)
-    self.sleep(2)
+    self.sleep(2.5)
     self.browser.find_element(By.XPATH, '//button[text()="Go"]').click()
     if not self.logged_in:
-      self.sleep(2)
+      self.sleep(2.5)
       self.browser.find_element(By.CSS_SELECTOR, '.fa-gear').click()
-      self.sleep(2)
+      self.sleep(2.5)
       self.browser.find_element(By.ID, 'enableyoutubevideos').click()
-      self.sleep(2)
+      self.sleep(2.5)
       self.browser.find_element(By.CSS_SELECTOR, '.fa-gear').click()
-      self.sleep(2)
+      self.sleep(2.5)
       self.browser.find_element(By.ID, 'enabledarktheme').click()
-      self.sleep(2)
+      self.sleep(2.5)
       self.browser.find_element(By.CSS_SELECTOR, '.chat__HeaderOption-streamVolume').click()
-      self.sleep(2)
+      self.sleep(2.5)
       self.browser.find_element(By.CSS_SELECTOR, '.chat__HeaderOption-sounds').click()
-      self.sleep(2)
+      self.sleep(2.5)
       self.browser.find_element(By.XPATH, '//span[text()="Close cams"]').click()
       self.logged_in = True
     print('\nLogin complete! Bot is ready to receive messages!')
 
+  def reset_scrollarea(self):
+    self.browser.execute_script("document.getElementsByClassName('scrollarea-content')[1].style.marginTop = '0px';")
+
   def click_username(self, username):
+    self.reset_scrollarea()
     user = self.browser.find_element(By.XPATH, '//div[contains(@class, "userList__UserHandle") and text()="'+username+'"]')
     while (not user.is_displayed()):
       self.browser.execute_script("var mt = Number(document.getElementsByClassName('scrollarea-content')[1].style.marginTop.replace('px', '')); document.getElementsByClassName('scrollarea-content')[1].style.marginTop = (mt-10)+'px';")
-    user.click()
-    self.sleep(0.5)
+    try:
+      user.click()
+      self.sleep(0.5)
+    except WebDriverException:
+      print('\nTried to click user {username} but username is not displayed!'.format(username=username))
 
   def ban(self, username):
     if username:
@@ -244,7 +250,6 @@ class Crispy():
         self.browser.find_element(By.XPATH, '//button[text()="Ban user"]').click()
       except NoSuchElementException:
         print('\nTried to ban user {username} but ban button not found! Is {username} a mod ?'.format(username=username))
-      self.browser.execute_script("document.getElementsByClassName('scrollarea-content')[1].style.marginTop = '0px';")
       self.sleep(0.5)
       self.send_message(self.ban_message)
 
