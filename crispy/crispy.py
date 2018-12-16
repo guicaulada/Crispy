@@ -5,6 +5,7 @@ from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
 from difflib import SequenceMatcher
 from crispy.markov import Text, NewlineText
+import traceback
 import time
 import atexit
 
@@ -404,6 +405,9 @@ class Crispy():
         self.sleep()
     except KeyboardInterrupt:
       pass
+    except:
+      traceback.print_exc()
+
 
   def shutdown(self):
     print('\nSaving and shutting down!\n')
