@@ -5,6 +5,23 @@ def save_command(**kwargs):
     crispy.answer_to('save')
     crispy.force_save()
 
+
+def ban_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  if crispy:
+    args = kwargs.get('args')
+    if args:
+      crispy.answer_to(' '.join(args))
+      crispy.add_banned(args)
+
+def unban_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  if crispy:
+    args = kwargs.get('args')
+    if args:
+      crispy.answer_to(' '.join(args))
+      crispy.del_banned(args)
+
 def refresh_command(**kwargs):
   crispy = kwargs.get('crispy')
   if crispy:

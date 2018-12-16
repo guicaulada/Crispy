@@ -34,7 +34,7 @@ class Crispy():
     self.targets = kwargs.get('targets', [])
     self.banned = kwargs.get('banned', [])
     self.filter = kwargs.get('filter', [])+self.banned+[self.bot]+[self.name_change]
-    self.ban_message = kwargs.get('ban_message', ':)')
+    self.ban_message = kwargs.get('ban_message', '/ban ')
     self.deny_message = kwargs.get('deny_message', ':)')
     self.triggered = kwargs.get('triggered', 0.0)
     self.room = kwargs.get('room', self.bot)
@@ -246,14 +246,7 @@ class Crispy():
 
   def ban(self, username):
     if username:
-      self.click_username(username)
-      try:
-        self.browser.find_element(By.XPATH, '//button[text()="Ban user"]').click()
-      except NoSuchElementException:
-        print('\nTried to ban user {username} but ban button not found! Is {username} a mod ?'.format(username=username))
-      self.sleep(0.5)
-      self.send_message(self.ban_message)
-
+      self.send_message(self.ban_message+username)
 
   def set_vocabulary(self,name):
     if self.vocabularies.get(name):
@@ -364,6 +357,24 @@ class Crispy():
 
   def force_refresh(self):
     self.refresh(force=True)
+
+  def add_banned(self, ban):
+    if isinstance(ban, str):
+      if ban not in self.banned:
+        self.banned.append(ban)
+    elif isinstance(ban, list):
+      for b in ban:
+        if b not in self.banned:
+          self.banned.append(b)
+
+  def del_banned(self, ban):
+    if isinstance(ban, str):
+      if ban in self.banned:
+        self.banned.remove(ban)
+    elif isinstance(ban, list):
+      for b in ban:
+        if b in self.banned:
+          self.banned.remove(b)
 
   def check_for_routines(self):
     self.generate_cached_message()
