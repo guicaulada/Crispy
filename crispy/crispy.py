@@ -52,13 +52,13 @@ class Crispy():
     self.targets = kwargs.get('targets', [])
     self.name_change = kwargs.get('name_change', ' changed their name to ')
     self.filter = kwargs.get('filter', [])+self.banned_users+self.banned_words+[self.bot]+[self.name_change]
-    self.deny_message = kwargs.get('deny_message', '/shrug ')
+    self.deny_message = kwargs.get('deny_message', '¯\_(ツ)_/¯')
     self.ban_command = kwargs.get('ban_message', '/ban ')
-    self.ban_message = kwargs.get('ban_message', '/shrug ')
+    self.ban_message = kwargs.get('ban_message', '¯\_(ツ)_/¯')
     self.unban_command = kwargs.get('unban_message', '/unban ')
-    self.unban_message = kwargs.get('unban_message', '/shrug ')
+    self.unban_message = kwargs.get('unban_message', '¯\_(ツ)_/¯')
     self.close_command = kwargs.get('close_message', '/close ')
-    self.close_message = kwargs.get('close_message', '/shrug ')
+    self.close_message = kwargs.get('close_message', '¯\_(ツ)_/¯')
     self.trigger_sensitivity = kwargs.get('trigger_sensitivity', 0.0)
     self.target_sensitivity = kwargs.get('target_sensitivity', 0.5)
     self.admins = kwargs.get('admins', [])
@@ -233,7 +233,6 @@ class Crispy():
         if profile.is_displayed():
           account = self.browser.find_element(By.CSS_SELECTOR, '.dropdown__Option-header').text
           return account in self.admins
-      self.send_message(self.deny_message)
     return False
 
   def has_cache(self):
@@ -436,12 +435,6 @@ class Crispy():
     for name in self.vocabularies:
       self.vocabularies[name].del_text(text)
 
-  def check_for_command(self, username, message):
-    if self.is_command(message) and self.is_admin(username):
-      self.try_command(username, message)
-      return True
-    return False
-
   def check_for_triggers(self, username, message):
     if self.is_target(username) or self.is_trigger(message):
       self.answer_to(username, message)
@@ -512,6 +505,15 @@ class Crispy():
         username = usernames[1]
     return username
 
+  def check_for_command(self, username, message):
+    if self.is_command(message):
+      if self.is_admin(username):
+        self.try_command(username, message)
+      else:
+        self.send_message(self.deny_message)
+      return True
+    return False
+
   def scan(self):
     try:
       self.wait_for_login()
@@ -519,8 +521,7 @@ class Crispy():
         if (self.is_message_present()):
           username, message = self.capture_message()
           if not self.is_bot(username):
-            self.check_for_command(username, message)
-            if not self.is_command(message):
+            if not self.check_for_command(username, message):
               if self.is_action(username, message):
                 username, message = self.capture_action(message)
               if self.filter_message(username, message):
