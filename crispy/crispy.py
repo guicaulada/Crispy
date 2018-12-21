@@ -229,9 +229,10 @@ class Crispy():
         profile = self.browser.find_element(By.XPATH, '//button[text()="Profile"]')
       except NoSuchElementException:
         print('\nTried to check user {username} for admin but profile not found! Is {username} a guest ?'.format(username=username))
-      if profile.is_displayed():
-        account = self.browser.find_element(By.CSS_SELECTOR, '.dropdown__Option-header').text
-        return account in self.admins
+      if profile != None:
+        if profile.is_displayed():
+          account = self.browser.find_element(By.CSS_SELECTOR, '.dropdown__Option-header').text
+          return account in self.admins
       self.send_message(self.deny_message)
     return False
 
