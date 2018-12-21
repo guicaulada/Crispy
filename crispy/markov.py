@@ -2,6 +2,7 @@ from markovify import Text as T
 from difflib import SequenceMatcher
 import re
 import os
+import json
 os.environ['FOR_DISABLE_CONSOLE_CTRL_HANDLER'] = 'T'
 
 print('\nUpdating NLTK data...\n')
@@ -11,9 +12,27 @@ nltk.download('averaged_perceptron_tagger')
 print('\nUpdate complete!')
 
 class Text(T):
+  def __init__(self, input_text, **kwargs):
+    self.options = kwargs
+    self.input_text = input_text
+    self.training = kwargs.get('training')
+    self.file = kwargs.get('file')
+    if kwargs.get('training') != None:
+      del kwargs['training']
+    if kwargs.get('file') != None:
+      del kwargs['file']
+    if kwargs.get('type') != None:
+      del kwargs['type']
+    super(Text, self).__init__(input_text, **kwargs)
+
+  def __setitem__(self, name, value):
+    return setattr(self, name, value)
+
+  def __getitem__(self, name):
+    return getattr(self, name)
+
   def make_sentence_from(self, message, max_chars, min_chars=0, **kwargs):
     tries = kwargs.get('tries', 100)
-    state_size = kwargs.get('state_size', 2)-1
     similarity = kwargs.get('similarity', 0.5)
     filter = kwargs.get('filter', [])
     tokens = nltk.word_tokenize(message)
@@ -31,3 +50,76 @@ class Text(T):
 class NewlineText(Text):
   def sentence_split(self, text):
     return re.split(r"\s*\n\s*", text)
+
+  def add_text(self, text, **kwargs):
+    self.input_text+= ('\n'+text)
+    self = NewlineText(self.input_text, **self.options)
+
+  def get_text(self):
+    return self.input_text
+
+  def has_text(self, text, **kwargs):
+    return text in self.input_text
+
+  def del_text(self, text):
+    self.input_text = '\n'.join([message for message in self.input_text.split('\n') if text not in message])
+    self = NewlineText(self.input_text, **self.options)
+
+class JsonText():
+  def __init__(self, json_str, **kwargs):
+    self.options = kwargs
+    self.user_data = json.loads(json_str)
+    self.mixed_text = []
+    self.user_model = {}
+    self.training = kwargs.get('training')
+    self.file = kwargs.get('file')
+    for user in self.user_data:
+      self.user_model[user] = NewlineText('\n'.join(self.user_data), **self.options)
+      for line in self.user_data[user]:
+        self.mixed_text.append(line)
+    self.mixed_model = NewlineText('\n'.join(self.mixed_text), **self.options)
+
+  def __setitem__(self, name, value):
+    return setattr(self, name, value)
+
+  def __getitem__(self, name):
+    return getattr(self, name)
+
+  def make_sentence_from(self, message, max_chars, min_chars=0, **kwargs):
+    sentence = None
+    username = kwargs.get('username')
+    if username:
+      if self.user_model.get(username):
+        if self.has_text(message, username=username):
+          sentence = self.user_model[username].make_sentence_from(message, max_chars, **kwargs)
+    if not sentence:
+      sentence = self.mixed_model.make_sentence_from(message, max_chars, **kwargs)
+    return sentence
+
+  def add_text(self, text, **kwargs):
+    username = kwargs.get('username')
+    self.mixed_text.append(text)
+    self.mixed_model = NewlineText('\n'.join(self.mixed_text), **self.options)
+    if username:
+      if not self.user_data.get(username):
+        self.user_data[username] = []
+      self.user_data[username].append(text)
+      self.user_model[username] = NewlineText('\n'.join(self.user_data), **self.options)
+
+  def get_text(self):
+    return json.dumps(self.user_data, sort_keys=True, indent=2)
+
+  def has_text(self, text, **kwargs):
+    username = kwargs.get('username')
+    if username and self.user_data.get(username):
+      return text in '\n'.join(self.user_data[username])
+    else:
+      return text in '\n'.join(self.mixed_text)
+
+  def del_text(self, text):
+    self.mixed_text = [message for message in self.mixed_text.split('\n') if text not in message]
+    self.mixed_model = NewlineText('\n'.join(self.mixed_text), **self.options)
+    for username in self.user_data:
+      self.user_data[username] = [message for message in self.user_data[username].split('\n') if text not in message]
+      self.user_model[username] = NewlineText('\n'.join(self.user_data), **self.options)
+

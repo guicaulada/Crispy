@@ -1,31 +1,42 @@
-
-from config import *
 from crispy.commands import *
 from crispy import Crispy
+import os
+import json
 
-crispy = Crispy(
-  bot=bot, room=room, targets=targets, max_len=max_len, filter=filter,
-  admins=admins, save_interval=save_interval, min_len=min_len, triggers=triggers,
-  state_size=state_size, tries=tries, sensitivity=sensitivity, triggered=triggered,
-  similarity=similarity, wipe_interval=wipe_interval, max_cache=max_cache,
-  username=username, password=password, banned=banned, deny_message=deny_message,
-  refresh_interval=refresh_interval, name_change=name_change
-)
+config = {}
+with open('config.json', 'r', encoding='utf8') as f:
+  config = json.loads(f.read())
 
-crispy.add_vocabulary('sherlock', 'models/sherlock.txt')
-crispy.add_vocabulary('biglebowski', 'models/biglebowski.txt')
-crispy.add_vocabulary('custom', 'models/custom.txt', newline_text=True, training=True)
+crispy = Crispy(**config)
 
-crispy.set_vocabulary('custom')
+crispy.username = os.environ["CRISPY_USERNAME"]
+crispy.password = os.environ["CRISPY_PASSWORD"]
 
-crispy.add_command('save', save_command)
-crispy.add_command('wipe', wipe_command)
-crispy.add_command('crispy', crispy_command)
-crispy.add_command('target', target_command)
-crispy.add_command('untarget', untarget_command)
-crispy.add_command('forget', forget_command)
-crispy.add_command('refresh', refresh_command)
-crispy.add_command('ban', ban_command)
-crispy.add_command('unban', unban_command)
+crispy.add_vocabulary('sherlock', file='models/sherlock.txt', type='text', state_size=3)
+crispy.add_vocabulary('biglebowski', file='models/biglebowski.txt', type='text', state_size=3)
+crispy.add_vocabulary('mixed', file='models/mixed.txt', type='line', state_size=3, training=True)
+crispy.add_vocabulary('parrot', file='models/parrot.json', type='json', state_size=3, training=True)
+
+crispy.set_vocabulary('parrot')
+
+crispy.set_command('save', save_command)
+crispy.set_command('ban', ban_command)
+crispy.set_command('unban', unban_command)
+crispy.set_command('close', close_command)
+crispy.set_command('unclose', unclose_command)
+crispy.set_command('refresh', refresh_command)
+crispy.set_command('target', target_command)
+crispy.set_command('untarget', untarget_command)
+crispy.set_command('admin', admin_command)
+crispy.set_command('unadmin', unadmin_command)
+crispy.set_command('trigger', trigger_command)
+crispy.set_command('untrigger', untrigger_command)
+crispy.set_command('filter', filter_command)
+crispy.set_command('unfilter', unfilter_command)
+crispy.set_command('wipe', wipe_command)
+crispy.set_command('crispy', crispy_command)
+crispy.set_command('forget', forget_command)
+crispy.set_command('vocabulary', vocabulary_command)
+crispy.set_command('config', config_command)
 
 crispy.scan()
