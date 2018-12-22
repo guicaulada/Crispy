@@ -15,7 +15,7 @@ class Text(T):
   def __init__(self, input_text, **kwargs):
     self.options = kwargs
     self.input_text = input_text
-    self.training = kwargs.get('training')
+    self.training = False
     self.file = kwargs.get('file')
     if kwargs.get('training') != None:
       del kwargs['training']
@@ -47,7 +47,12 @@ class Text(T):
         if SequenceMatcher(None, keywords, s_keywords).ratio() > similarity:
           return sentence
 
+
 class NewlineText(Text):
+  def __init__(self, input_text, **kwargs):
+    super(NewlineText, self).__init__(input_text, **kwargs)
+    self.training = kwargs.get('training')
+
   def sentence_split(self, text):
     return re.split(r"\s*\n\s*", text)
 
