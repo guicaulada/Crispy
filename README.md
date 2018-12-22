@@ -116,7 +116,7 @@ The bot is still under development so some of it's features are not fully tested
 ```
 MIT License
 
-Copyright (c) 2018 Guilherme Caulada
+Copyright (c) 2018 Guilherme Caulada (Sighmir)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
