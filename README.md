@@ -115,7 +115,7 @@ The bot is still under development so some of it's features are not fully tested
 
 ```
 Crispy - An annoying bot.
-Copyright (C) 2018 Guilherme Caulada (Sighmir)
+Copyright (C) 2018  Guilherme Caulada (Sighmir)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
