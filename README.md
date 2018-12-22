@@ -16,7 +16,7 @@ to make a bot to keep up with him.
 - **Nov 19~Dec 5, 2018**: Lots of improvements to code, speech, detection of messages, plus fixes and new commands.
 - **Dec 6~12, 2018**: Added bot account that can be modded and profile validation for admin commands.
 - **Dec 13~16, 2018**: Fixed login issues and other errors and improves ban function.
-- **Dec 21~22, 2018**: Prepared for public release, a lot of refactoring, new features and improvements.
+- **Dec 21~22, 2018**: Prepared for public release, removed personal files, made improvements and lots of refactoring.
 
 ## Requirements
 This project uses [Selenium](https://github.com/SeleniumHQ/selenium),
