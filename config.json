@@ -3,6 +3,7 @@
   "banned_users": [],
   "banned_words": [],
   "bot": "Crispybot",
+  "closed_users": [],
   "debug": false,
   "filter": [
     "http",

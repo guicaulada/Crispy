@@ -519,6 +519,16 @@ class Crispy():
       return True
     return False
 
+  def check_for_cams(self):
+    cam_handles = []
+    try:
+      cam_handles = self.browser.find_elements(By.CSS_SELECTOR, '.cams__CamHandle')
+    except NoSuchElementException:
+      pass
+    for handle in cam_handles:
+      if handle.text in self.closed_users:
+        self.close(handle.text)
+
   def scan(self):
     try:
       self.wait_for_login()
@@ -536,6 +546,7 @@ class Crispy():
                 username = self.get_name_change(username, message)
                 self.check_for_banned(username, message)
         self.check_for_routines()
+        self.check_for_cams()
         self.sleep(1.5)
     except KeyboardInterrupt:
       pass
