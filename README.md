@@ -93,13 +93,13 @@ The configuration variables can be set in config.json. The default file has the 
 - **targets**: List of targeted users that will always have your messages answered by the bot. *(Default: [])*
 - **name_change**: Name change message sent by the website. *(Default: changed their name to)*
 - **filter**: Messages containing phrases from this list won't be processed by the bot answering mechanism. *(Default: [])*
-- **deny_message**: Message sent by the bot when denying a command. *(Default: ¯\\_(ツ)_/¯)*
+- **deny_message**: Message sent by the bot when denying a command. *(Default: /shrug)*
 - **ban_command**: Ban command used on the website. *(Default: /ban)*
-- **ban_message**: Message sent after banning an user. *(Default: ¯\\_(ツ)_/¯)*
+- **ban_message**: Message sent after banning an user. *(Default: /shrug)*
 - **unban_command**: Unban command used on the website. *(Default: /unban)*
-- **unban_message**: Message sent after unbanning someone. *(Default: ¯\\_(ツ)_/¯)*
+- **unban_message**: Message sent after unbanning someone. *(Default: /shrug)*
 - **close_command**: Close command used on the website. *(Default: /close)*
-- **close_message**: Message sent after closing someone. *(Default: ¯\\_(ツ)_/¯)*
+- **close_message**: Message sent after closing someone. *(Default: /shrug)*
 - **trigger_sensitivity**: Sensitivity of the trigger words detection. *(Default: 0.0)*
 - **target_sensitivity**: Sensitivity of the target dectection. *(Default: 0.5)*
 - **admins**: List of bot admin accounts that have access to commands. *(Default: [])*
