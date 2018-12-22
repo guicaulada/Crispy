@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException, WebDriverException
+from selenium.common.exceptions import NoSuchElementException, WebDriverException, StaleElementReferenceException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
@@ -548,8 +548,12 @@ class Crispy():
     except NoSuchElementException:
       pass
     for handle in cam_handles:
-      if handle.text in self.closed_users:
-        self.close(handle.text)
+      try:
+        if handle.text in self.closed_users:
+          self.close(handle.text)
+      except StaleElementReferenceException:
+        print('\nTried to check cam for {} but element got stale! Username changed ?'.format(username))
+
 
   def scan(self):
     try:
@@ -572,8 +576,6 @@ class Crispy():
         self.sleep(1.5)
     except KeyboardInterrupt:
       pass
-    except:
-      traceback.print_exc()
 
 
   def shutdown(self):
