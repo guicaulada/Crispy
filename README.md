@@ -104,7 +104,7 @@ The configuration variables can be set in config.json. The default file has the 
 - **target_sensitivity**: Sensitivity of the target dectection. *(Default: 0.5)*
 - **admins**: List of bot admin accounts that have access to commands. *(Default: [])*
 - **prefix**: Prefix for bot commands. *(Default: !)*
-- **debug**: If set to True the bot will run on a visible chrome windown. *(Default: False)*
+- **debug**: If set to True the bot will run on a visible chrome window. *(Default: False)*
 
 ## Contact
 
