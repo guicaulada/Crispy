@@ -9,8 +9,8 @@ with open('config.json', 'r', encoding='utf8') as f:
 
 crispy = Crispy(**config)
 
-crispy.username = os.environ["CRISPY_USERNAME"]
-crispy.password = os.environ["CRISPY_PASSWORD"]
+crispy.username = config.get('username', os.environ['CRISPY_USERNAME'])
+crispy.password = config.get('password', os.environ['CRISPY_PASSWORD'])
 
 crispy.add_vocabulary('sherlock', file='models/sherlock.txt', type='text', state_size=3)
 crispy.add_vocabulary('biglebowski', file='models/biglebowski.txt', type='text', state_size=3)
