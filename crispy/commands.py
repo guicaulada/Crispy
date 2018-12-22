@@ -157,11 +157,15 @@ def config_command(**kwargs):
   if crispy:
     args = kwargs.get('args')
     if args:
-      value = None
-      try:
-        value = float(args[1])
-      except ValueError:
-        value = ' '.join(args[1:])
-      if value:
-        crispy.update_config({args[0]: value})
-        crispy.send_message('Updated config variable: {} = {}'.format(args[0], str(value)))
+      old_value = crispy.config.get(args[0])
+      if old_value != None:
+        new_value = ' '.join(args[1:])
+        try:
+          value = type(old_value)(new_value)
+        except ValueError:
+          crispy.send_message('Invalid value type: {} = {}'.format(args[0], str(old_value)))
+        else:
+          crispy.update_config({args[0]: value})
+          crispy.send_message('Updated config variable: {} = {}'.format(args[0], str(new_value)))
+      else:
+        crispy.send_message('Invalid value key: {}'.format(args[0]))

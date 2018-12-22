@@ -32,7 +32,7 @@ class Text(T):
     return getattr(self, name)
 
   def make_sentence_from(self, message, max_chars, min_chars=0, **kwargs):
-    tries = kwargs.get('tries', 100)
+    tries = kwargs.get('tries', 10)
     similarity = kwargs.get('similarity', 0.5)
     filter = kwargs.get('filter', [])
     tokens = nltk.word_tokenize(message)
@@ -84,6 +84,16 @@ class JsonText():
 
   def __getitem__(self, name):
     return getattr(self, name)
+
+  def make_short_sentence(self, max_chars, min_chars=0, **kwargs):
+    sentence = None
+    username = kwargs.get('username')
+    if username:
+      if self.user_model.get(username):
+        sentence = self.user_model[username].make_short_sentence(max_chars, **kwargs)
+    if not sentence:
+      sentence = self.mixed_model.make_short_sentence(max_chars, **kwargs)
+    return sentence
 
   def make_sentence_from(self, message, max_chars, min_chars=0, **kwargs):
     sentence = None

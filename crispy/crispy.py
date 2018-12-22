@@ -22,10 +22,6 @@ class Crispy():
     self.commands = {}
     self.vocabularies = {}
     self.vocabulary = None
-    options = ChromeOptions()
-    options.add_argument('headless')
-    options.add_argument('log-level=3')
-    self.browser = Chrome(chrome_options=options)
     self.username = kwargs.get('username', None)
     self.password = kwargs.get('password', None)
     atexit.register(self.shutdown)
@@ -39,7 +35,7 @@ class Crispy():
     self.max_tries = kwargs.get('max_tries', 10)
     self.max_len = kwargs.get('max_len', 60)
     self.min_len = kwargs.get('min_len', 10)
-    self.max_cache = kwargs.get('max_cache', 100)
+    self.max_cache = kwargs.get('max_cache', 0)
     self.refresh_interval = kwargs.get('refresh_interval', 10)
     self.sleep_interval = kwargs.get('sleep_interval', 0.1)
     self.wipe_interval = kwargs.get('wipe_interval', 10)
@@ -63,6 +59,14 @@ class Crispy():
     self.target_sensitivity = kwargs.get('target_sensitivity', 0.5)
     self.admins = kwargs.get('admins', [])
     self.prefix = kwargs.get('prefix', '!')
+    self.debug = kwargs.get('debug', False)
+
+    # Driver
+    options = ChromeOptions()
+    if not self.debug:
+      options.add_argument('log-level=3')
+      options.add_argument('headless')
+    self.browser = Chrome(chrome_options=options)
 
   def __setitem__(self, name, value):
     return setattr(self, name, value)
@@ -256,11 +260,12 @@ class Crispy():
       self.send_message(self.cache.pop(0))
 
   def capture_message(self):
-    if ('chat__MessageHandle' in self.browser.find_elements(By.CSS_SELECTOR, '.chat__Message')[-1].get_attribute('innerHTML')):
-      username = self.browser.find_elements(By.CSS_SELECTOR, '.chat__MessageHandle')[-1].text
+    chat_message = self.browser.find_elements(By.CSS_SELECTOR, '.chat__Message')[-1]
+    if ('chat__MessageHandle' in chat_message.get_attribute('innerHTML')):
+      username = chat_message.find_element(By.CSS_SELECTOR, '.chat__MessageHandle').text
     else:
       username = None
-    message = self.browser.find_elements(By.CSS_SELECTOR, '.chat__MessageBody')[-1].text
+    message = chat_message.find_element(By.CSS_SELECTOR, '.chat__MessageBody').text
     return username, message
 
   def wait_for_element(self, by, element, t=10):
@@ -377,7 +382,7 @@ class Crispy():
             self.vocabularies[name].add_text(message, username=username)
 
   def generate_message(self):
-    return self.vocabulary.make_short_sentence(self.max_len, tries=self.tries)
+    return self.vocabulary.make_short_sentence(self.max_len, tries=self.max_tries)
 
   def generate_message_from(self,username,message):
     return self.vocabulary.make_sentence_from(message, self.max_len, self.min_len, tries=self.max_tries, similarity=self.similarity_score, filter=self.sent, username=username)
