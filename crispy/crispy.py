@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException, WebDriverException, StaleElementReferenceException
+from selenium.common.exceptions import NoSuchElementException, WebDriverException, StaleElementReferenceException, TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
@@ -287,7 +287,12 @@ class Crispy():
     return username, message
 
   def wait_for_element(self, by, element, t=10):
-    return WebDriverWait(self.browser, t).until(EC.presence_of_element_located((by, element)))
+    try:
+      return WebDriverWait(self.browser, t).until(EC.presence_of_element_located((by, element)))
+    except TimeoutException:
+      print('\nTimed out waiting for element "'+element+'". Check internet connection and try again.')
+      exit()
+
 
   def has_user_account(self):
     return self.username and self.password
