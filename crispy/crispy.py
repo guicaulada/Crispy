@@ -286,12 +286,12 @@ class Crispy():
     message = chat_message.find_element(By.CSS_SELECTOR, '.chat__MessageBody').text
     return username, message
 
-  def wait_for_element(self, by, element, t=10):
+  def wait_for_element(self, by, element, t=30):
     try:
       return WebDriverWait(self.browser, t).until(EC.presence_of_element_located((by, element)))
     except TimeoutException:
-      print('\nTimed out waiting for element "'+element+'". Check internet connection and try again.')
-      exit()
+      print('\nTimed out waiting for element "'+element+'". Check internet connection.. trying again.')
+      return self.wait_for_element(by, element)
 
 
   def has_user_account(self):
