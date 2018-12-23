@@ -290,8 +290,8 @@ class Crispy():
     try:
       return WebDriverWait(self.browser, t).until(EC.presence_of_element_located((by, element)))
     except TimeoutException:
-      print('\nTimed out waiting for element "'+element+'". Check internet connection.. trying again.')
-      return self.wait_for_element(by, element)
+      print('\nTimed out waiting for element "'+element+'". Check internet connection.. refreshing..')
+      self.force_refresh()
 
 
   def has_user_account(self):
