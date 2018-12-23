@@ -554,7 +554,7 @@ class Crispy():
         if handle.text in self.closed_users:
           self.close(handle.text)
       except StaleElementReferenceException:
-        print('\nTried to check cam for {} but element got stale! Username changed ?'.format(username))
+        print('\nTried to check cam but element got stale! Username changed? Will try again...')
 
 
   def scan(self):
