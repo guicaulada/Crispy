@@ -556,7 +556,6 @@ class Crispy():
       except StaleElementReferenceException:
         print('\nTried to check cam but element got stale! Username changed? Will try again...')
 
-
   def scan(self):
     try:
       self.wait_for_login()
