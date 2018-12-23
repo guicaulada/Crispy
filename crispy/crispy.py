@@ -485,9 +485,11 @@ class Crispy():
     for b in kwargs.get('users', []):
       if b not in self.banned_users:
         self.banned_users.append(b)
+        self.ban(b)
     for b in kwargs.get('words', []):
       if b not in self.banned_words:
         self.banned_words.append(b)
+        self.ban(b)
     self.update_config({'banned_words': self.banned_words, 'banned_users': self.banned_users})
 
   def del_banned(self, **kwargs):
