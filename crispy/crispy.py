@@ -78,19 +78,23 @@ class Crispy():
     self.admins = kwargs.get('admins', [])
     self.prefix = kwargs.get('prefix', '!')
     self.debug = kwargs.get('debug', False)
-
-    # Driver
-    options = ChromeOptions()
-    if not self.debug:
-      options.add_argument('log-level=3')
-      options.add_argument('headless')
-    self.browser = Chrome(chrome_options=options)
+    self.browser = None
+    self.restart_driver()
 
   def __setitem__(self, name, value):
     return setattr(self, name, value)
 
   def __getitem__(self, name):
     return getattr(self, name)
+
+  def restart_driver(self):
+    if self.browser != None:
+      self.browser.quit()
+    options = ChromeOptions()
+    if not self.debug:
+      options.add_argument('log-level=3')
+      options.add_argument('headless')
+    self.browser = Chrome(chrome_options=options)
 
   def update_config(self, conf):
     self.config.update(conf)
@@ -286,12 +290,13 @@ class Crispy():
     message = chat_message.find_element(By.CSS_SELECTOR, '.chat__MessageBody').text
     return username, message
 
-  def wait_for_element(self, by, element, t=30):
+  def wait_for_element(self, by, element, t=10):
     try:
       return WebDriverWait(self.browser, t).until(EC.presence_of_element_located((by, element)))
     except TimeoutException:
-      print('\nTimed out waiting for element "'+element+'". Check internet connection.. refreshing..')
-      self.force_refresh()
+      print('\nTimed out waiting for element "'+element+'". Restarting driver...')
+      self.logged_in = False
+      self.restart_driver()
 
 
   def has_user_account(self):
@@ -314,35 +319,36 @@ class Crispy():
     self.last_refresh = self.current_time()
     self.browser.get(self.url)
     nickname = self.wait_for_element(By.CSS_SELECTOR, '.form__Input-inline')
-    nickname.clear()
-    self.sleep(5)
-    nickname.send_keys(self.bot)
-    self.sleep(5)
-    self.browser.find_element(By.XPATH, '//button[text()="Go"]').click()
-    self.sleep(5)
-    try:
-      self.browser.find_element(By.XPATH, '//span[text()="Close cams"]').click()
-    except NoSuchElementException:
-      print('\nNo open cameras found! Unable to close cams, will try again next refresh.')
-    if not self.logged_in:
+    if nickname:
+      nickname.clear()
       self.sleep(5)
-      self.browser.find_element(By.CSS_SELECTOR, '.fa-gear').click()
+      nickname.send_keys(self.bot)
       self.sleep(5)
-      youtube = self.browser.find_element(By.ID, 'enableyoutubevideos')
-      if youtube.is_selected():
-        youtube.click()
+      self.browser.find_element(By.XPATH, '//button[text()="Go"]').click()
+      self.sleep(5)
+      try:
+        self.browser.find_element(By.XPATH, '//span[text()="Close cams"]').click()
+      except NoSuchElementException:
+        print('\nNo open cameras found! Unable to close cams, will try again next refresh.')
+      if not self.logged_in:
         self.sleep(5)
         self.browser.find_element(By.CSS_SELECTOR, '.fa-gear').click()
         self.sleep(5)
-      darkmode = self.browser.find_element(By.ID, 'enabledarktheme')
-      if not darkmode.is_selected():
-        darkmode.click()
+        youtube = self.browser.find_element(By.ID, 'enableyoutubevideos')
+        if youtube.is_selected():
+          youtube.click()
+          self.sleep(5)
+          self.browser.find_element(By.CSS_SELECTOR, '.fa-gear').click()
+          self.sleep(5)
+        darkmode = self.browser.find_element(By.ID, 'enabledarktheme')
+        if not darkmode.is_selected():
+          darkmode.click()
+          self.sleep(5)
+        self.browser.find_element(By.CSS_SELECTOR, '.chat__HeaderOption-streamVolume').click()
         self.sleep(5)
-      self.browser.find_element(By.CSS_SELECTOR, '.chat__HeaderOption-streamVolume').click()
-      self.sleep(5)
-      self.browser.find_element(By.CSS_SELECTOR, '.chat__HeaderOption-sounds').click()
-      self.logged_in = True
-    print('\nLogin complete! Bot is ready to receive messages!')
+        self.browser.find_element(By.CSS_SELECTOR, '.chat__HeaderOption-sounds').click()
+        self.logged_in = True
+      print('\nLogin complete! Bot is ready to receive messages!')
 
   def reset_scrollarea(self):
     self.browser.execute_script("document.getElementsByClassName('scrollarea-content')[1].style.marginTop = '0px';")
@@ -563,23 +569,25 @@ class Crispy():
 
   def scan(self):
     try:
-      self.wait_for_login()
-      while self.logged_in:
-        self.check_for_cams()
-        if (self.is_message_present()):
-          username, message = self.capture_message()
-          if not self.is_bot(username):
-            if not self.check_for_command(username, message):
-              if self.is_action(username, message):
-                username, message = self.capture_action(message)
-              if self.filter_message(username, message):
-                self.check_for_triggers(username, message)
-                self.train_vocabulary(username, message)
-              elif (self.has_user_account):
-                username = self.get_name_change(username, message)
-                self.check_for_banned(username, message)
-        self.check_for_routines()
-        self.sleep(1.5)
+      while True:
+        if not self.logged_in:
+          self.wait_for_login()
+        while self.logged_in:
+          self.check_for_cams()
+          if (self.is_message_present()):
+            username, message = self.capture_message()
+            if not self.is_bot(username):
+              if not self.check_for_command(username, message):
+                if self.is_action(username, message):
+                  username, message = self.capture_action(message)
+                if self.filter_message(username, message):
+                  self.check_for_triggers(username, message)
+                  self.train_vocabulary(username, message)
+                elif (self.has_user_account):
+                  username = self.get_name_change(username, message)
+                  self.check_for_banned(username, message)
+          self.check_for_routines()
+          self.sleep(1.5)
     except KeyboardInterrupt:
       pass
 
