@@ -1,4 +1,3 @@
 markovify
-difflib
 nltk
 selenium
