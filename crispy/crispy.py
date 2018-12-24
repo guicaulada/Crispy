@@ -565,6 +565,7 @@ class Crispy():
     try:
       self.wait_for_login()
       while self.logged_in:
+        self.check_for_cams()
         if (self.is_message_present()):
           username, message = self.capture_message()
           if not self.is_bot(username):
@@ -578,7 +579,6 @@ class Crispy():
                 username = self.get_name_change(username, message)
                 self.check_for_banned(username, message)
         self.check_for_routines()
-        self.check_for_cams()
         self.sleep(1.5)
     except KeyboardInterrupt:
       pass
