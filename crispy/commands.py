@@ -177,6 +177,10 @@ def config_command(**kwargs):
       old_value = crispy.config.get(args[0])
       if old_value != None:
         new_value = ' '.join(args[1:])
+        if new_value == 'True':
+          new_value = True
+        elif new_value == 'False':
+          new_value = False
         try:
           value = type(old_value)(new_value)
         except ValueError:
