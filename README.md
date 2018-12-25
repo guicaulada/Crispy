@@ -20,10 +20,10 @@ to make a bot to keep up with him.
 
 ## Requirements
 This project uses [Selenium](https://github.com/SeleniumHQ/selenium),
-[Markovify](https://github.com/jsvine/markovify) and [NLTK](https://github.com/nltk/nltk), 
-those can be installed with `pip` following the installation instructions.  
+[Markovify](https://github.com/jsvine/markovify) and [NLTK](https://github.com/nltk/nltk),
+those can be installed with `pip` following the installation instructions.
 Selenium is using [Chromedriver](https://sites.google.com/a/chromium.org/chromedriver/downloads),
-so you will need to install that on your machine aswell.  
+so you will need to install that on your machine aswell.
 This project was made using **Python 3.6**, it was **not tested** for any other versions.
 
 ## Installation
@@ -85,6 +85,7 @@ The configuration variables can be set in config.json. The default file has the 
 - **sleep_interval**: Sleep interval used in most actions of the bot, change global speed. *(Default: 0.1)*
 - **wipe_interval**: Interval in minutes between each sent messages cache wipe. *(Default: 10)*
 - **save_interval**: Interval in minutes between each save and cache cleanup for vocabulary data. *(Default: 10)*
+- **case_sensitive**: If uppercase letters and lowercase letters will be considered when generating phrases. *(Default: True)*
 - **similarity_score**: Similarity score necessary between generated message and last message to be accepted. *(Default: 0.5)*
 - **triggers**: List of words that will trigger answers from the bot even for non-targeted users. *(Default: [])*
 - **closed_users**: List of usernames that should be closed automatically after camming up. *(Default: [])*
@@ -108,7 +109,7 @@ The configuration variables can be set in config.json. The default file has the 
 
 ## Contact
 
-Please if you find any bugs let me know by creating an issue on GitHub.  
+Please if you find any bugs let me know by creating an issue on GitHub.
 The bot is still under development so some of it's features are not fully tested and need improvements.
 
 ## License

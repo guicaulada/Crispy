@@ -58,6 +58,7 @@ class Crispy():
     self.sleep_interval = kwargs.get('sleep_interval', 0.1)
     self.wipe_interval = kwargs.get('wipe_interval', 10)
     self.save_interval = kwargs.get('save_interval', 10)
+    self.case_sensitive = kwargs.get('case_sensitive', True)
     self.similarity_score = kwargs.get('similarity_score', 0.5)
     self.triggers = kwargs.get('triggers', [])
     self.closed_users = kwargs.get('closed_users', [])
@@ -417,7 +418,7 @@ class Crispy():
     return self.vocabulary.make_short_sentence(self.max_len, tries=self.max_tries)
 
   def generate_message_from(self,username,message):
-    return self.vocabulary.make_sentence_from(message, self.max_len, self.min_len, tries=self.max_tries, similarity=self.similarity_score, filter=self.sent, username=username)
+    return self.vocabulary.make_sentence_from(message, self.max_len, self.min_len, tries=self.max_tries, similarity=self.similarity_score, filter=self.sent, username=username, case_sensitive=self.case_sensitive)
 
   def generate_cached_message(self):
     if (len(self.cache) < self.max_cache) and self.vocabulary:
