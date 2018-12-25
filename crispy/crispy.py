@@ -298,7 +298,6 @@ class Crispy():
       self.logged_in = False
       self.restart_driver()
 
-
   def has_user_account(self):
     return self.username and self.password
 
