@@ -394,20 +394,32 @@ class Crispy():
         self.logged_in = True
       print('\nLogin complete! Bot is ready to receive messages!')
 
-  def reset_scrollarea(self):
+  def reset_userlist(self):
     self.browser.execute_script("document.getElementsByClassName('scrollarea-content')[1].style.marginTop = '0px';")
+
+  def scroll_userlist(self):
+    self.browser.execute_script('''
+      var viewers = Number(document.getElementsByClassName('cams__ViewerCount')[0].textContent)
+      var userlist = document.getElementsByClassName('scrollarea-content')[1];
+      var mt = Number(userlist.style.marginTop.replace('px', ''))-30;
+      if (mt > ((7*30)-(viewers*30))) {
+        userlist.style.marginTop = mt+'px';
+      } else {
+        userlist.style.marginTop = '0px';
+      }
+    ''')
 
   def click_username(self, username):
     if username and not self.is_bot(username):
-      self.reset_scrollarea()
       user = self.browser.find_element(By.XPATH, '//div[contains(@class, "userList__UserHandle") and text()="'+username+'"]')
-      while (not user.is_displayed()):
-        self.browser.execute_script("var mt = Number(document.getElementsByClassName('scrollarea-content')[1].style.marginTop.replace('px', '')); document.getElementsByClassName('scrollarea-content')[1].style.marginTop = (mt-10)+'px';")
-      try:
-        user.click()
-        self.sleep()
-      except WebDriverException:
-        print('\nTried to click {} but username is not displayed!'.format(username))
+      if user:
+        try:
+          while not user.is_displayed():
+            self.scroll_userlist()
+          user.click()
+          self.sleep()
+        except (WebDriverException, StaleElementReferenceException):
+          print('\nTried to click {} but username is not displayed!'.format(username))
 
   def click_chat(self):
     self.browser.find_element(By.CSS_SELECTOR, '.chat__Input').click()
