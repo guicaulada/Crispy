@@ -140,8 +140,6 @@ class Crispy():
     if not username:
       username = ''
     profile = self.get_user_profile(username)
-    if not profile:
-      profile = ''
     for f in filter_set:
       if f.lower() in message.lower() or f.lower() == username.lower() or f.lower() == profile.lower():
         return False
@@ -195,7 +193,6 @@ class Crispy():
     if not message or not username:
       return 0
     profile = self.get_user_profile(username)
-    print('{} {}'.format(profile, username))
     for t in self.silenced_users:
       if t.lower() == username.lower() or t.lower() == profile.lower():
         return 1
@@ -416,7 +413,7 @@ class Crispy():
     self.browser.find_element(By.CSS_SELECTOR, '.chat__Input').click()
 
   def get_user_profile(self, username):
-    profile = None
+    profile = ''
     if username:
       self.click_username(username)
       try:
