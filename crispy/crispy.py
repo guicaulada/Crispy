@@ -419,7 +419,7 @@ class Crispy():
       try:
         profile = self.browser.find_element(By.XPATH, '//button[text()="Profile"]')
       except NoSuchElementException:
-        print('\nTried to check profile for {} but profile not found!'.format(username))
+        pass
       if profile:
         profile = self.browser.find_element(By.CSS_SELECTOR, '.dropdown__Option-header').text
       self.click_chat()
