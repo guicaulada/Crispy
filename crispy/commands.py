@@ -52,13 +52,73 @@ def unban_command(**kwargs):
         crispy.send_message('Please specify "word" or "user" as the second argument!')
         crispy.send_message('For example: !unban user crispy')
 
+def clear_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  if crispy:
+    args = kwargs.get('args')
+    if args:
+      if args[0] == 'word' or args[0] == 'words':
+        crispy.add_cleared(words=args[1:])
+        crispy.send_message('Word(s) {} have been added to the cleared words list!'.format(', '.join(args[1:])))
+      elif args[0] == 'user' or args[0] == 'user':
+        crispy.add_cleared(users=args[1:])
+        crispy.send_message('User(s) {} have been added to the cleared users list!'.format(', '.join(args[1:])))
+      else:
+        crispy.send_message('Please specify "word" or "user" as the second argument!')
+        crispy.send_message('For example: !clear user crispy')
+
+def unclear_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  if crispy:
+    args = kwargs.get('args')
+    if args:
+      if args[0] == 'word' or args[0] == 'words':
+        crispy.del_cleared(words=args[1:])
+        crispy.send_message('Word(s) {} have been removed from the cleared words list!'.format(', '.join(args[1:])))
+      elif args[0] == 'user' or args[0] == 'user':
+        crispy.del_cleared(users=args[1:])
+        crispy.send_message('User(s) {} have been removed from the cleared users list!'.format(', '.join(args[1:])))
+      else:
+        crispy.send_message('Please specify "word" or "user" as the second argument!')
+        crispy.send_message('For example: !unclear user crispy')
+
+def silence_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  if crispy:
+    args = kwargs.get('args')
+    if args:
+      if args[0] == 'word' or args[0] == 'words':
+        crispy.add_silenced(words=args[1:])
+        crispy.send_message('Word(s) {} have been added to the silenced words list!'.format(', '.join(args[1:])))
+      elif args[0] == 'user' or args[0] == 'user':
+        crispy.add_silenced(users=args[1:])
+        crispy.send_message('User(s) {} have been added to the silenced users list!'.format(', '.join(args[1:])))
+      else:
+        crispy.send_message('Please specify "word" or "user" as the second argument!')
+        crispy.send_message('For example: !silence user crispy')
+
+def unsilence_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  if crispy:
+    args = kwargs.get('args')
+    if args:
+      if args[0] == 'word' or args[0] == 'words':
+        crispy.del_silenced(words=args[1:])
+        crispy.send_message('Word(s) {} have been removed from the silenced words list!'.format(', '.join(args[1:])))
+      elif args[0] == 'user' or args[0] == 'user':
+        crispy.del_silenced(users=args[1:])
+        crispy.send_message('User(s) {} have been removed from the silenced users list!'.format(', '.join(args[1:])))
+      else:
+        crispy.send_message('Please specify "word" or "user" as the second argument!')
+        crispy.send_message('For example: !unsilence user crispy')
+
 def close_command(**kwargs):
   crispy = kwargs.get('crispy')
   if crispy:
     args = kwargs.get('args')
     if args:
       crispy.add_closed(args)
-      crispy.send_message('User(s) {} have been added to the closed list!'.format(', '.join(args[1:])))
+      crispy.send_message('User(s) {} have been added to the closed list!'.format(', '.join(args)))
 
 def unclose_command(**kwargs):
   crispy = kwargs.get('crispy')
@@ -66,7 +126,7 @@ def unclose_command(**kwargs):
     args = kwargs.get('args')
     if args:
       crispy.del_closed(args)
-      crispy.send_message('User(s) {} have been removed from the closed list!'.format(', '.join(args[1:])))
+      crispy.send_message('User(s) {} have been removed from the closed list!'.format(', '.join(args)))
 
 def refresh_command(**kwargs):
   crispy = kwargs.get('crispy')
@@ -190,3 +250,166 @@ def config_command(**kwargs):
           crispy.send_message('Updated config variable: {} = {}'.format(args[0], str(new_value)))
       else:
         crispy.send_message('Invalid value key: {}'.format(args[0]))
+
+
+def color_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  if crispy:
+    args = kwargs.get('args')
+    if args:
+      crispy.color(args[0])
+
+
+def nick_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  if crispy:
+    args = kwargs.get('args')
+    if args:
+      crispy.nick(args[0])
+
+def admins_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  username = kwargs.get('username')
+  text = 'Admin users:'
+  if crispy:
+    for user in crispy.admins:
+      if len(text+user) < 200:
+        text = '{} {}'.format(text, user)
+      else:
+        crispy.msg(username, text, False)
+        text = ''
+    crispy.msg(username, text)
+
+def targets_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  username = kwargs.get('username')
+  text = 'Target users:'
+  if crispy:
+    for user in crispy.targets:
+      if len(text+user) < 200:
+        text = '{} {}'.format(text, user)
+      else:
+        crispy.msg(username, text, False)
+        text = ''
+    crispy.msg(username, text)
+
+def triggers_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  username = kwargs.get('username')
+  text = 'Trigger words:'
+  if crispy:
+    for word in crispy.triggers:
+      if len(text+word) < 200:
+        text = '{} {}'.format(text, word)
+      else:
+        crispy.msg(username, text, False)
+        text = ''
+    crispy.msg(username, text)
+
+def closed_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  username = kwargs.get('username')
+  text = 'Closed users:'
+  if crispy:
+    for user in crispy.closed_users:
+      if len(text+user) < 200:
+        text = '{} {}'.format(text, user)
+      else:
+        crispy.msg(username, text, False)
+        text = ''
+    crispy.msg(username, text)
+
+def banned_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  username = kwargs.get('username')
+  if crispy:
+    args = kwargs.get('args')
+    if args:
+      lst = None
+      text = 'Banned {}:'.format(args[0])
+      if args[0] == 'words':
+        lst = crispy.banned_words
+      elif args[0] == 'users':
+        lst = crispy.banned_users
+      if lst:
+        for el in lst:
+          if len(text+el) < 200:
+            text = '{} {}'.format(text, el)
+          else:
+            crispy.msg(username, text, False)
+            text = ''
+        crispy.msg(username, text)
+      else:
+        crispy.send_message(crispy.deny_message)
+    else:
+      crispy.send_message(crispy.deny_message)
+
+def cleared_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  username = kwargs.get('username')
+  if crispy:
+    args = kwargs.get('args')
+    if args:
+      lst = None
+      text = 'Cleared {}:'.format(args[0])
+      if args[0] == 'words':
+        lst = crispy.cleared_words
+      elif args[0] == 'users':
+        lst = crispy.cleared_users
+      if lst:
+        for el in lst:
+          if len(text+el) < 200:
+            text = '{} {}'.format(text, el)
+          else:
+            crispy.msg(username, text, False)
+            text = ''
+        crispy.msg(username, text)
+      else:
+        crispy.send_message(crispy.deny_message)
+    else:
+      crispy.send_message(crispy.deny_message)
+
+def silenced_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  username = kwargs.get('username')
+  if crispy:
+    args = kwargs.get('args')
+    if args:
+      lst = None
+      text = 'Silenced {}:'.format(args[0])
+      if args[0] == 'words':
+        lst = crispy.silenced_words
+      elif args[0] == 'users':
+        lst = crispy.silenced_users
+      if lst:
+        for el in lst:
+          if len(text+el) < 200:
+            text = '{} {}'.format(text, el)
+          else:
+            crispy.msg(username, text, False)
+            text = ''
+        crispy.msg(username, text)
+      else:
+        crispy.send_message(crispy.deny_message)
+    else:
+      crispy.send_message(crispy.deny_message)
+
+def help_command(**kwargs):
+  crispy = kwargs.get('crispy')
+  username = kwargs.get('username')
+  if crispy:
+    args = kwargs.get('args')
+    if args:
+      if crispy.is_command(crispy.prefix+args[0]):
+        crispy.msg(username, crispy.command_help[args[0]])
+      else:
+        crispy.send_message(crispy.deny_message)
+    else:
+      text = 'Commands:'
+      for command in crispy.commands:
+        if len(text+command) < 200:
+          text = '{} {}'.format(text, command)
+        else:
+          crispy.msg(username, text, False)
+          text = ''
+      crispy.msg(username, text)

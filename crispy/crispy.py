@@ -38,6 +38,7 @@ class Crispy():
     self.cache = []
     self.sent = []
     self.commands = {}
+    self.command_help = {}
     self.vocabularies = {}
     self.vocabulary = None
     self.username = kwargs.get('username', None)
@@ -64,16 +65,33 @@ class Crispy():
     self.closed_users = kwargs.get('closed_users', [])
     self.banned_users = kwargs.get('banned_users', [])
     self.banned_words = kwargs.get('banned_words', [])
+    self.cleared_words = kwargs.get('cleared_words', [])
+    self.cleared_users = kwargs.get('cleared_users', [])
+    self.silenced_words = kwargs.get('silenced_words', [])
+    self.silenced_users = kwargs.get('silenced_users', [])
     self.targets = kwargs.get('targets', [])
-    self.name_change = kwargs.get('name_change', ' changed their name to ')
-    self.filter = kwargs.get('filter', [])+self.banned_users+self.banned_words+[self.bot]+[self.name_change]
+    self.name_change = kwargs.get('name_change', 'changed their name to')
+    self.filter = kwargs.get('filter', [])
     self.deny_message = kwargs.get('deny_message', '/shrug')
-    self.ban_command = kwargs.get('ban_command', '/ban ')
+    self.ban_command = kwargs.get('ban_command', '/ban')
     self.ban_message = kwargs.get('ban_message', '/shrug')
-    self.unban_command = kwargs.get('unban_command', '/unban ')
+    self.unban_command = kwargs.get('unban_command', '/unban')
     self.unban_message = kwargs.get('unban_message', '/shrug')
-    self.close_command = kwargs.get('close_command', '/close ')
+    self.close_command = kwargs.get('close_command', '/close')
     self.close_message = kwargs.get('close_message', '/shrug')
+    self.clear_command = kwargs.get('clear_command', '/clear')
+    self.clear_message = kwargs.get('clear_message', '/shrug')
+    self.silence_command = kwargs.get('silence_command', '/silence')
+    self.silence_message = kwargs.get('silence_message', '/shrug')
+    self.msg_command = kwargs.get('msg_command', '/msg')
+    self.msg_message = kwargs.get('msg_message', '/shrug')
+    self.action_command = kwargs.get('action_command', '/me')
+    self.action_message = kwargs.get('action_message', '/shrug')
+    self.nick_command = kwargs.get('nick_command', '/nick')
+    self.nick_message = kwargs.get('nick_message', '/shrug')
+    self.color_command = kwargs.get('color_command', '/color')
+    self.color_message = kwargs.get('color_message', '/shrug')
+    self.clear_banned = kwargs.get('clear_banned', False)
     self.trigger_sensitivity = kwargs.get('trigger_sensitivity', 0.0)
     self.target_sensitivity = kwargs.get('target_sensitivity', 0.5)
     self.admins = kwargs.get('admins', [])
@@ -113,10 +131,19 @@ class Crispy():
     return (not username and message[0] == '*')
 
   def filter_message(self, username, message):
+    filter_set = list(
+      set(self.filter) | set([self.bot]) | set([self.name_change]) |
+      set(self.banned_users) | set(self.banned_words) |
+      set(self.silenced_users) | set(self.silenced_words) |
+      set(self.cleared_users) | set(self.cleared_words)
+    )
     if not username:
       username = ''
-    for f in self.filter:
-      if f.lower() in message.lower() or f.lower() in username.lower():
+    profile = self.get_user_profile(username)
+    if not profile:
+      profile = ''
+    for f in filter_set:
+      if f.lower() in message.lower() or f.lower() == username.lower() or f.lower() == profile.lower():
         return False
     return True
 
@@ -142,21 +169,49 @@ class Crispy():
 
   def is_banned(self, username, message):
     if not message or not username:
-      return False
+      return 0
+    profile = self.get_user_profile(username)
     for t in self.banned_users:
-      if t.lower() == username.lower():
-        return True
+      if t.lower() == username.lower() or t.lower() == profile.lower():
+        return 1
     for t in self.banned_words:
       if t.lower() in message.lower():
-        return True
-    return False
+        return 2
+    return 0
 
-  def set_command(self, command, func):
+  def is_cleared(self, username, message):
+    if not message or not username:
+      return 0
+    profile = self.get_user_profile(username)
+    for t in self.cleared_users:
+      if t.lower() == username.lower() or t.lower() == profile.lower():
+        return 1
+    for t in self.cleared_words:
+      if t.lower() in message.lower():
+        return 2
+    return 0
+
+  def is_silenced(self, username, message):
+    if not message or not username:
+      return 0
+    profile = self.get_user_profile(username)
+    print('{} {}'.format(profile, username))
+    for t in self.silenced_users:
+      if t.lower() == username.lower() or t.lower() == profile.lower():
+        return 1
+    for t in self.silenced_words:
+      if t.lower() in message.lower():
+        return 2
+    return 0
+
+  def set_command(self, command, func, comment=''):
     self.commands[command] = func
+    self.command_help[command] = comment
 
   def del_command(self, command):
     if self.is_command(self.prefix+command):
       del self.commands[command]
+      del self.command_help[command]
 
   def try_command(self, username, message):
     for command in self.commands:
@@ -171,9 +226,13 @@ class Crispy():
   def is_target(self,username):
     if not username:
       return False
-    for t in self.targets:
-      if SequenceMatcher(None, t.lower(), username.lower()).ratio() > min(max(1-self.target_sensitivity,0),1) and not self.is_bot(username):
-        return True
+    if not self.is_bot(username):
+      profile = self.get_user_profile(username)
+      for t in self.targets:
+        if SequenceMatcher(None, t.lower(), username.lower()).ratio() > min(max(1-self.target_sensitivity,0),1):
+          return True
+        elif SequenceMatcher(None, t.lower(), profile.lower()).ratio() > min(max(1-self.target_sensitivity, 0), 1):
+          return True
     return False
 
   def add_target(self,target):
@@ -237,30 +296,18 @@ class Crispy():
     self.update_config({'triggers': self.triggers})
 
   def add_filter(self, message):
-    not_filter = self.banned_users+self.banned_words+[self.bot]+[self.name_change]
     if message not in self.filter:
       self.filter.append(message)
-    self.update_config({'filter':  [f for f in self.filter if f not in not_filter]})
+    self.update_config({'filter':  self.filter})
 
   def del_filter(self, message):
-    not_filter = self.banned_users+self.banned_words+[self.bot]+[self.name_change]
     if message in self.filter:
       self.filter.remove(message)
-    self.update_config({'filter': [f for f in self.filter if f not in not_filter]})
+    self.update_config({'filter': self.filter})
 
   def is_admin(self,username):
-    if username:
-      self.click_username(username)
-      profile = None
-      try:
-        profile = self.browser.find_element(By.XPATH, '//button[text()="Profile"]')
-      except NoSuchElementException:
-        print('\nTried to check user {username} for admin but profile not found! Is {username} a guest ?'.format(username=username))
-      if profile != None:
-        if profile.is_displayed():
-          account = self.browser.find_element(By.CSS_SELECTOR, '.dropdown__Option-header').text
-          return account in self.admins
-    return False
+    profile = self.get_user_profile(username)
+    return profile in self.admins
 
   def has_cache(self):
     return len(self.cache) > 0
@@ -354,33 +401,96 @@ class Crispy():
     self.browser.execute_script("document.getElementsByClassName('scrollarea-content')[1].style.marginTop = '0px';")
 
   def click_username(self, username):
-    self.reset_scrollarea()
-    user = self.browser.find_element(By.XPATH, '//div[contains(@class, "userList__UserHandle") and text()="'+username+'"]')
-    while (not user.is_displayed()):
-      self.browser.execute_script("var mt = Number(document.getElementsByClassName('scrollarea-content')[1].style.marginTop.replace('px', '')); document.getElementsByClassName('scrollarea-content')[1].style.marginTop = (mt-10)+'px';")
-    try:
-      user.click()
-      self.sleep()
-    except WebDriverException:
-      print('\nTried to click {} but username is not displayed!'.format(username))
+    if username and not self.is_bot(username):
+      self.reset_scrollarea()
+      user = self.browser.find_element(By.XPATH, '//div[contains(@class, "userList__UserHandle") and text()="'+username+'"]')
+      while (not user.is_displayed()):
+        self.browser.execute_script("var mt = Number(document.getElementsByClassName('scrollarea-content')[1].style.marginTop.replace('px', '')); document.getElementsByClassName('scrollarea-content')[1].style.marginTop = (mt-10)+'px';")
+      try:
+        user.click()
+        self.sleep()
+      except WebDriverException:
+        print('\nTried to click {} but username is not displayed!'.format(username))
 
-  def ban(self, username):
-    if username:
-      self.send_message(self.ban_command+username)
-      self.sleep()
-      self.send_message(self.ban_message)
+  def click_chat(self):
+    self.browser.find_element(By.CSS_SELECTOR, '.chat__Input').click()
 
-  def unban(self, username):
+  def get_user_profile(self, username):
+    profile = None
     if username:
-      self.send_message(self.unban_command+username)
-      self.sleep()
-      self.send_message(self.unban_message)
+      self.click_username(username)
+      try:
+        profile = self.browser.find_element(By.XPATH, '//button[text()="Profile"]')
+      except NoSuchElementException:
+        print('\nTried to check profile for {} but profile not found!'.format(username))
+      if profile:
+        profile = self.browser.find_element(By.CSS_SELECTOR, '.dropdown__Option-header').text
+      self.click_chat()
+    return profile
 
-  def close(self, username):
+  def ban(self, username, notify=True):
     if username:
-      self.send_message(self.close_command+username)
+      self.send_message('{} {}'.format(self.ban_command,username))
       self.sleep()
-      self.send_message(self.close_message)
+      if notify:
+        self.send_message(self.ban_message)
+
+  def unban(self, username, notify=True):
+    if username:
+      self.send_message('{} {}'.format(self.unban_command,username))
+      self.sleep()
+      if notify:
+        self.send_message(self.unban_message)
+
+  def close(self, username, notify=True):
+    if username:
+      self.send_message('{} {}'.format(self.close_command,username))
+      self.sleep()
+      if notify:
+        self.send_message(self.close_message)
+
+  def silence(self, username, notify=True):
+    if username:
+      self.send_message('{} {}'.format(self.silence_command,username))
+      self.sleep()
+      if notify:
+        self.send_message(self.silence_message)
+
+  def clear(self, notify=True):
+    self.send_message(self.clear_command)
+    self.sleep()
+    if notify:
+      self.send_message(self.clear_message)
+
+  def msg(self, username,message, notify=True):
+    if username and message:
+      self.send_message('{} {} {}'.format(self.msg_command,username,message))
+      self.sleep()
+      if notify:
+        self.send_message(self.msg_message)
+
+  def action(self, message, notify=True):
+    if message:
+      self.send_message('{} {}'.format(self.action_command,message))
+      self.sleep()
+      if notify:
+        self.send_message(self.action_message)
+
+  def nick(self, nickname, notify=True):
+    if nickname:
+      self.send_message('{} {}'.format(self.nick_command,nickname))
+      self.bot = nickname
+      self.update_config({'bot': self.bot})
+      self.sleep()
+      if notify:
+        self.send_message(self.nick_message)
+
+  def color(self, color, notify=True):
+    if color:
+      self.send_message('{} {}'.format(self.color_command,color))
+      self.sleep()
+      if notify:
+        self.send_message(self.color_message)
 
   def has_vocabulary(self, name):
     return self.vocabularies.get(name, False)
@@ -480,10 +590,42 @@ class Crispy():
     return False
 
   def check_for_banned(self, username, message):
-    if self.is_banned(username, message):
+    banned = self.is_banned(username, message)
+    if banned:
       self.ban(username)
+      if banned == 2 and self.clear_banned:
+        self.clear()
       return True
     return False
+
+  def check_for_cleared(self, username, message):
+    cleared = self.is_cleared(username, message)
+    if cleared:
+      self.clear()
+      return True
+    return False
+
+  def check_for_silenced(self, username, message):
+    silenced = self.is_silenced(username, message)
+    if silenced:
+      self.silence(username)
+      return True
+    return False
+
+  def check_for_closed(self):
+    cam_handles = []
+    try:
+      cam_handles = self.browser.find_elements(By.CSS_SELECTOR, '.cams__CamHandle')
+    except NoSuchElementException:
+      pass
+    for handle in cam_handles:
+      try:
+        username = handle.text
+        profile = self.get_user_profile(username)
+        if username in self.closed_users or profile in self.closed_users:
+          self.close(username)
+      except StaleElementReferenceException:
+        pass
 
   def refresh(self, **kwargs):
     if (self.current_time()-self.last_refresh > self.refresh_interval*60000) or kwargs.get('force'):
@@ -514,6 +656,42 @@ class Crispy():
         self.unban(b)
     self.update_config({'banned_words': self.banned_words, 'banned_users': self.banned_users})
 
+  def add_cleared(self, **kwargs):
+    for b in kwargs.get('users', []):
+      if b not in self.cleared_users:
+        self.cleared_users.append(b)
+    for b in kwargs.get('words', []):
+      if b not in self.cleared_words:
+        self.cleared_words.append(b)
+    self.update_config({'cleared_words': self.cleared_words, 'cleared_users': self.cleared_users})
+
+  def del_cleared(self, **kwargs):
+    for b in kwargs.get('users', []):
+      if b in self.cleared_users:
+        self.cleared_users.remove(b)
+    for b in kwargs.get('words', []):
+      if b in self.cleared_words:
+        self.cleared_words.remove(b)
+    self.update_config({'cleared_words': self.cleared_words, 'cleared_users': self.cleared_users})
+
+  def add_silenced(self, **kwargs):
+    for b in kwargs.get('users', []):
+      if b not in self.silenced_users:
+        self.silenced_users.append(b)
+    for b in kwargs.get('words', []):
+      if b not in self.silenced_words:
+        self.silenced_words.append(b)
+    self.update_config({'silenced_words': self.silenced_words, 'silenced_users': self.silenced_users})
+
+  def del_silenced(self, **kwargs):
+    for b in kwargs.get('users', []):
+      if b in self.silenced_users:
+        self.silenced_users.remove(b)
+    for b in kwargs.get('words', []):
+      if b in self.silenced_words:
+        self.silenced_words.remove(b)
+    self.update_config({'silenced_words': self.silenced_words, 'silenced_users': self.silenced_users})
+
   def add_closed(self, users):
     for b in users:
       if b not in self.closed_users:
@@ -538,11 +716,11 @@ class Crispy():
     while not self.logged_in:
       self.sleep()
 
-  def get_name_change(self, username, message):
+  def check_name_change(self, username, message):
     if not username and message:
       usernames = message.split(self.name_change)
       if len(usernames) == 2:
-        username = usernames[1]
+        username = usernames[1].strip()
     return username
 
   def check_for_command(self, username, message):
@@ -554,27 +732,16 @@ class Crispy():
       return True
     return False
 
-  def check_for_cams(self):
-    cam_handles = []
-    try:
-      cam_handles = self.browser.find_elements(By.CSS_SELECTOR, '.cams__CamHandle')
-    except NoSuchElementException:
-      pass
-    for handle in cam_handles:
-      try:
-        if handle.text in self.closed_users:
-          self.close(handle.text)
-      except StaleElementReferenceException:
-        print('\nTried to check cam but element got stale! Username changed? Will try again...')
-
   def scan(self):
     try:
       while True:
         if not self.logged_in:
           self.wait_for_login()
         while self.logged_in:
-          self.check_for_cams()
-          if (self.is_message_present()):
+          self.sleep(1.5)
+          self.check_for_routines()
+          self.check_for_closed()
+          if self.is_message_present():
             username, message = self.capture_message()
             if not self.is_bot(username):
               if not self.check_for_command(username, message):
@@ -583,11 +750,12 @@ class Crispy():
                 if self.filter_message(username, message):
                   self.check_for_triggers(username, message)
                   self.train_vocabulary(username, message)
-                elif (self.has_user_account):
-                  username = self.get_name_change(username, message)
-                  self.check_for_banned(username, message)
-          self.check_for_routines()
-          self.sleep(1.5)
+                elif self.has_user_account():
+                  username = self.check_name_change(username, message)
+                  if not self.is_bot(username):
+                    self.check_for_banned(username, message)
+                    self.check_for_cleared(username, message)
+                    self.check_for_silenced(username, message)
     except KeyboardInterrupt:
       pass
 

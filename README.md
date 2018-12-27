@@ -47,11 +47,16 @@ Vocabulary files should be located inside the folder *models*.
 
 ## Commands
 Default prefix for commands is *!*. More commands can be created with custom functions.
+- **help** \[*&lt;command>*\]: Private message the list of commands or specific help about a command.
 - **save**: Saves training data and cleans cached messages.
 - **ban** *&lt;users|words>* *&lt;targets>*: Add users or words to the banned list.
   - **ban** *&lt;users>*: Make the bot ban every user named exctly like *&lt;targets>*.
   - **ban** *&lt;words>*: Make the bot ban every user, by message or username, containing *&lt;targets>*.
 - **unban** *&lt;users|words>* *&lt;targets>*: Remove users or words from the banned list.
+- **clear** *&lt;users|words>* *&lt;targets>*: Add users or words to the cleared list.
+- **unclear** *&lt;users|words>* *&lt;targets>*: Remove users or words from the cleared list.
+- **silence** *&lt;users|words>* *&lt;targets>*: Add users or words to the silenced list.
+- **unsilence** *&lt;users|words>* *&lt;targets>*: Remove users or words from the silenced list.
 - **close** *&lt;usernames>*: Add users to the closed list, the bot will close his cam automatically.
 - **unclose** *&lt;usernames>*: Remove users from the closed list.
 - **refresh**: Make the bot refresh the page.
@@ -68,6 +73,15 @@ Default prefix for commands is *!*. More commands can be created with custom fun
 - **forget** *&lt;phrase>*: Make the bot forget phrases from training data containg *&lt;phrase>*.
 - **vocabulary** *&lt;name>*: Set the bot vocabulary.
 - **config** *&lt;key>* *&lt;value>*: Set config variable.
+- **nick** *&lt;name>*: Set the bot nickname.
+- **color**: Changes the bot chat color.
+- **closed**: Private messages the closed users list.
+- **banned** *&lt;users|words>*: Private messages the banned users/words list.
+- **cleared** *&lt;users|words>*: Private messages the cleared users/words list.
+- **silenced** *&lt;users|words>*: Private messages the silenced users/words list.
+- **targets**: Private messages the target users list.
+- **triggers**: Private messages the trigger words list.
+- **admins**: Private messages the admin users list.
 
 ## Configuration
 The configuration variables can be set in config.json. The default file has the most important variables.
@@ -91,6 +105,10 @@ The configuration variables can be set in config.json. The default file has the 
 - **closed_users**: List of usernames that should be closed automatically after camming up. *(Default: [])*
 - **banned_users**: List of usernames that should be banned automatically when joining the room. *(Default: [])*
 - **banned_words**: List of banned words, the bot will ban every user, by message or username with those words. *(Default: [])*
+- **cleared_users**: List of usernames that should be cleared automatically after sending a message. *(Default: [])*
+- **cleared_words**: List of words that should be cleared automatically after appearing in a message. *(Default: [])*
+- **silenced_users**: List of usernames that should be silenced automatically after sending a message. *(Default: [])*
+- **silenced_words**: List of words, the bot will silence every user, by message or username with those words. *(Default: [])*
 - **targets**: List of targeted users that will always have your messages answered by the bot. *(Default: [])*
 - **name_change**: Name change message sent by the website. *(Default: changed their name to)*
 - **filter**: Messages containing phrases from this list won't be processed by the bot answering mechanism. *(Default: [])*
@@ -101,6 +119,19 @@ The configuration variables can be set in config.json. The default file has the 
 - **unban_message**: Message sent after unbanning someone. *(Default: /shrug)*
 - **close_command**: Close command used on the website. *(Default: /close)*
 - **close_message**: Message sent after closing someone. *(Default: /shrug)*
+- **clear_command**: Clear command used on the website. *(Default: /clear)*
+- **clear_message**: Message sent after clearing the chat. *(Default: /shrug)*
+- **silence_command**: Silence command used on the website. *(Default: /silence)*
+- **silence_message**: Message sent after silencing someone. *(Default: /shrug)*
+- **msg_command**: Private message command used on the website. *(Default: /msg)*
+- **msg_message**: Message sent after messaging someone. *(Default: /shrug)*
+- **action_command**: Action command used on the website. *(Default: /action)*
+- **action_message**: Message sent after an action. *(Default: /shrug)*
+- **nick_command**: Nick command used on the website. *(Default: /nick)*
+- **nick_message**: Message sent after changing nickname. *(Default: /shrug)*
+- **color_command**: Color command used on the website. *(Default: /color)*
+- **color_message**: Message sent after changing color. *(Default: /shrug)*
+- **clear_banned**: Clear chat after ban by word. *(Default: False)*
 - **trigger_sensitivity**: Sensitivity of the trigger words detection. *(Default: 0.0)*
 - **target_sensitivity**: Sensitivity of the target dectection. *(Default: 0.5)*
 - **admins**: List of bot admin accounts that have access to commands. *(Default: [])*
