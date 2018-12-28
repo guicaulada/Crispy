@@ -411,15 +411,15 @@ class Crispy():
 
   def click_username(self, username):
     if username and not self.is_bot(username):
-      user = self.browser.find_element(By.XPATH, '//div[contains(@class, "userList__UserHandle") and text()="'+username+'"]')
-      if user:
-        try:
+      try:
+        user = self.browser.find_element(By.XPATH, '//div[contains(@class, "userList__UserHandle") and text()="'+username+'"]')
+        if user:
           while not user.is_displayed():
             self.scroll_userlist()
           user.click()
           self.sleep()
-        except (WebDriverException, StaleElementReferenceException):
-          print('\nTried to click {} but username is not displayed!'.format(username))
+      except (WebDriverException, StaleElementReferenceException, NoSuchElementException):
+        print('\nTried to click {} but username is not displayed!'.format(username))
 
   def click_chat(self):
     self.browser.find_element(By.CSS_SELECTOR, '.chat__Input').click()
