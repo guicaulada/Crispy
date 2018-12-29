@@ -328,11 +328,15 @@ class Crispy():
 
   def capture_message(self):
     chat_message = self.browser.find_elements(By.CSS_SELECTOR, '.chat__Message')[-1]
-    if ('chat__MessageHandle' in chat_message.get_attribute('innerHTML')):
-      username = chat_message.find_element(By.CSS_SELECTOR, '.chat__MessageHandle').text
-    else:
-      username = None
-    message = chat_message.find_element(By.CSS_SELECTOR, '.chat__MessageBody').text
+    try:
+      if ('chat__MessageHandle' in chat_message.get_attribute('innerHTML')):
+        username = chat_message.find_element(By.CSS_SELECTOR, '.chat__MessageHandle').text
+      else:
+        username = None
+      message = chat_message.find_element(By.CSS_SELECTOR, '.chat__MessageBody').text
+    except StaleElementReferenceException:
+      username = ''
+      message = ''
     return username, message
 
   def wait_for_element(self, by, element, t=10):
