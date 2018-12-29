@@ -110,6 +110,10 @@ class Crispy():
     if self.browser != None:
       self.browser.quit()
     options = ChromeOptions()
+    options.add_argument("window-size=1920,1080")
+    options.add_argument("disable-gpu")
+    options.add_argument("disable-extensions")
+    options.add_argument("start-maximized")
     if not self.debug:
       options.add_argument('log-level=3')
       options.add_argument('headless')
