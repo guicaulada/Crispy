@@ -234,12 +234,12 @@ def config_command(**kwargs):
   if crispy:
     args = kwargs.get('args')
     if args:
-      old_value = crispy.config.get(args[0])
+      old_value = getattr(crispy, args[0])
       if old_value != None:
         new_value = ' '.join(args[1:])
-        if new_value == 'True':
+        if new_value.lower() == 'true':
           new_value = True
-        elif new_value == 'False':
+        elif new_value.lower() == 'false':
           new_value = False
         try:
           value = type(old_value)(new_value)
