@@ -236,18 +236,21 @@ def config_command(**kwargs):
     if args:
       old_value = getattr(crispy, args[0])
       if old_value != None:
-        new_value = ' '.join(args[1:])
-        if new_value.lower() == 'true':
-          new_value = True
-        elif new_value.lower() == 'false':
-          new_value = False
-        try:
-          value = type(old_value)(new_value)
-        except ValueError:
-          crispy.send_message('Invalid value type: {} = {}'.format(args[0], str(old_value)))
+        if len(args) > 1:
+          new_value = ' '.join(args[1:])
+          if new_value.lower() == 'true':
+            new_value = True
+          elif new_value.lower() == 'false':
+            new_value = False
+          try:
+            value = type(old_value)(new_value)
+          except ValueError:
+            crispy.send_message('Invalid value type: {} = {}'.format(args[0], str(old_value)))
+          else:
+            crispy.update_config({args[0]: value})
+            crispy.send_message('Updated config variable: {} = {}'.format(args[0], str(new_value)))
         else:
-          crispy.update_config({args[0]: value})
-          crispy.send_message('Updated config variable: {} = {}'.format(args[0], str(new_value)))
+            crispy.send_message('Config variable: {} = {}'.format(args[0], str(old_value)))
       else:
         crispy.send_message('Invalid value key: {}'.format(args[0]))
 
