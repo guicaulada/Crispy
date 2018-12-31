@@ -437,8 +437,7 @@ class Crispy():
     if username:
       self.click_username(username)
       try:
-        profile = self.browser.find_element(By.XPATH, '//button[text()="Profile"]')
-        if profile:
+        if self.browser.find_element(By.XPATH, '//button[text()="Profile"]'):
           profile = self.browser.find_element(By.CSS_SELECTOR, '.dropdown__Option-header').text
       except (NoSuchElementException, StaleElementReferenceException):
         pass
