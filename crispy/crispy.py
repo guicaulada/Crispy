@@ -430,7 +430,12 @@ class Crispy():
         print('\nTried to click {} but username is not displayed!'.format(username))
 
   def click_chat(self):
-    self.browser.find_element(By.CSS_SELECTOR, '.chat__Input').click()
+    try:
+      self.browser.find_element(By.CSS_SELECTOR, '.chat__Input').click()
+    except NoSuchElementException:
+      print('\nTried to click .chat__Input but element not found. Refreshing page...')
+      self.refresh()
+
 
   def get_user_profile(self, username):
     profile = ''
