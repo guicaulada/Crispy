@@ -432,7 +432,7 @@ class Crispy():
   def click_chat(self):
     try:
       self.browser.find_element(By.CSS_SELECTOR, '.chat__Input').click()
-    except NoSuchElementException:
+    except (NoSuchElementException, WebDriverException):
       print('\nTried to click .chat__Input but element not found. Refreshing page...')
       self.refresh()
 
