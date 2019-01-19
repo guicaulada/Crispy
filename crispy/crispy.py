@@ -380,7 +380,7 @@ class Crispy():
       self.sleep(5)
       try:
         self.browser.find_element(By.XPATH, '//span[text()="Close cams"]').click()
-      except NoSuchElementException:
+      except (NoSuchElementException, WebDriverException):
         print('\nNo open cameras found! Unable to close cams, will try again next refresh.')
       if not self.logged_in:
         self.sleep(5)
