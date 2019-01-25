@@ -4,3 +4,4 @@
 **/debug.log
 **/*.bkp
 models/*
+node_modules

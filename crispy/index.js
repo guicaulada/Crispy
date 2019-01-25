@@ -1,4 +1,4 @@
-'''
+/**
 Crispy - An annoying bot.
 Copyright (C) 2018  Guilherme Caulada (Sighmir)
 
@@ -14,6 +14,6 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
-'''
+*/
 
-from crispy.crispy import Crispy
+module.exports=require('./Crispy.js')
