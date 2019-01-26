@@ -34,7 +34,7 @@ This project was made using **NodeJS v10.3.0**, it was **not tested** for any ot
   - Execute the example with `npm start`
 
 - If you wish to make your own:
-  - Just run `npm install crispy` in your project folder
+  - Just run `npm install crispybot` in your project folder
 
 ## Vocabulary
 Vocabulary files should be located inside the folder *models*.
