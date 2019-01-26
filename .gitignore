@@ -3,5 +3,4 @@
 **/*.pyc
 **/debug.log
 **/*.bkp
-models/*
-node_modules
+**/node_modules
