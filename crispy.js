@@ -18,9 +18,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 const fs = require('fs')
 const wd = require('webdriverio')
+const cd = require('chromedriver')
 const sm = require('sequencematcher')
 const MarkovText = require('./markov.js')
-const selenium = require('selenium-standalone')
 
 class Crispy {
   constructor(kwargs={}) {
@@ -30,8 +30,7 @@ class Crispy {
     this.start_time = this.current_time()
     this.last_wipe = this.start_time
     this.last_save = this.start_time
-    this.cache = []
-    this.sent = []
+    this.cache = new Set()
     this.commands = {}
     this.command_help = {}
     this.vocabularies = {}
@@ -47,27 +46,26 @@ class Crispy {
     this.room = kwargs.room != null ? kwargs.room : this.bot
     this.url = kwargs.url != null ? kwargs.url : 'https://jumpin.chat/'+this.room
     this.login_url = kwargs.login_url != null ? kwargs.login_url : 'https://jumpin.chat/login'
-    this.max_tries = kwargs.max_tries != null ? kwargs.max_tries : 10
+    this.max_tries = kwargs.max_tries != null ? kwargs.max_tries : 100
     this.max_len = kwargs.max_len != null ? kwargs.max_len : 60
     this.min_len = kwargs.min_len != null ? kwargs.min_len : 10
-    this.max_cache = kwargs.max_cache != null ? kwargs.max_cache : 0
     this.refresh_interval = kwargs.refresh_interval != null ? kwargs.refresh_interval : 10
     this.sleep_interval = kwargs.sleep_interval != null ? kwargs.sleep_interval : 0.1
     this.wipe_interval = kwargs.wipe_interval != null ? kwargs.wipe_interval : 10
     this.save_interval = kwargs.save_interval != null ? kwargs.save_interval : 10
     this.case_sensitive = kwargs.case_sensitive != null ? kwargs.case_sensitive : true
     this.similarity_score = kwargs.similarity_score != null ? kwargs.similarity_score : 0.5
-    this.triggers = kwargs.triggers != null ? kwargs.triggers : []
-    this.closed_users = kwargs.closed_users != null ? kwargs.closed_users : []
-    this.banned_users = kwargs.banned_users != null ? kwargs.banned_users : []
-    this.banned_words = kwargs.banned_words != null ? kwargs.banned_words : []
-    this.cleared_words = kwargs.cleared_words != null ? kwargs.cleared_words : []
-    this.cleared_users = kwargs.cleared_users != null ? kwargs.cleared_users : []
-    this.silenced_words = kwargs.silenced_words != null ? kwargs.silenced_words : []
-    this.silenced_users = kwargs.silenced_users != null ? kwargs.silenced_users : []
-    this.targets = kwargs.targets != null ? kwargs.targets : []
+    this.filter = kwargs.filter != null ? new Set(kwargs.filter) : new Set()
+    this.targets = kwargs.targets != null ? new Set(kwargs.targets) : new Set()
+    this.triggers = kwargs.triggers != null ? new Set(kwargs.triggers) : new Set()
+    this.closed_users = kwargs.closed_users != null ? new Set(kwargs.closed_users) : new Set()
+    this.banned_users = kwargs.banned_users != null ? new Set(kwargs.banned_users) : new Set()
+    this.banned_words = kwargs.banned_words != null ? new Set(kwargs.banned_words) : new Set()
+    this.cleared_words = kwargs.cleared_words != null ? new Set(kwargs.cleared_words) : new Set()
+    this.cleared_users = kwargs.cleared_users != null ? new Set(kwargs.cleared_users) : new Set()
+    this.silenced_words = kwargs.silenced_words != null ? new Set(kwargs.silenced_words) : new Set()
+    this.silenced_users = kwargs.silenced_users != null ? new Set(kwargs.silenced_users) : new Set()
     this.name_change = kwargs.name_change != null ? kwargs.name_change : 'changed their name to'
-    this.filter = kwargs.filter != null ? kwargs.filter : []
     this.deny_message = kwargs.deny_message != null ? kwargs.deny_message : '/shrug'
     this.ban_command = kwargs.ban_command != null ? kwargs.ban_command : '/ban'
     this.ban_message = kwargs.ban_message != null ? kwargs.ban_message : '/shrug'
@@ -90,31 +88,15 @@ class Crispy {
     this.clear_banned = kwargs.clear_banned != null ? kwargs.clear_banned : false
     this.trigger_sensitivity = kwargs.trigger_sensitivity != null ? kwargs.trigger_sensitivity : 0.0
     this.target_sensitivity = kwargs.target_sensitivity != null ? kwargs.target_sensitivity : 0.5
-    this.admins = kwargs.admins != null ? kwargs.admins : []
+    this.admins = kwargs.admins != null ? new Set(kwargs.admins) : new Set()
     this.prefix = kwargs.prefix != null ? kwargs.prefix : '!'
     this.debug = kwargs.debug != null ? kwargs.debug : false
 
     // Webdriver
-    selenium.start((err, child) => {this.selenium = child})
-    this.wdio_options = kwargs.wdio_options != null ? kwargs.wdio_options : {
-      logLevel: 'silent',
-      capabilities: {
-        browserName: 'chrome',
-        'goog:chromeOptions': {
-          args: [
-            'window-size=1920,1080',
-            'disable-gpu',
-            'disable-extensions',
-            'start-maximized',
-            // 'headless',
-            'log-level=3'
-          ]
-        }
-      }
-    }
+    cd.start()
 
     // Exit
-    let exit = () => {self.shutdown(self)}
+    let exit = () => {self.exit = true}
     process.on('SIGHUP', exit)
     process.on('SIGQUIT', exit)
     process.on('SIGTERM', exit)
@@ -130,15 +112,40 @@ class Crispy {
 
   async restart_driver() {
     if (this.browser != null) {
-      this.browser.shutdown()
+      this.browser = null
+      cd.stop()
+      cd.start()
     }
-    this.browser = await wd.remote(this.wdio_options)
+    let args = [
+      'window-size=1920,1080',
+      'disable-gpu',
+      'disable-extensions',
+      'start-maximized',
+    ]
+    let logLevel = 'silent'
+    if (!this.debug) args.push('headless', 'log-level=3')
+    else logLevel = 'error'
+    this.browser = await wd.remote({
+      port: 9515,
+      path: '/',
+      logLevel: logLevel,
+      capabilities: {
+        browserName: 'chrome',
+        'goog:chromeOptions': {
+          args: args
+        }
+      }
+    })
   }
 
   update_config(conf) {
-    this.config = Object.assign(conf, this.config)
     for (let key in conf) {
       this[key] = conf[key]
+      if (conf[key].constructor == Set) {
+        this.config[key] = Array.from(conf[key])
+      } else {
+        this.config[key] = conf[key]
+      }
     }
     fs.writeFile('config.json', JSON.stringify(this.config, null, 2), 'utf8', (err) => {if (this.debug) console.log(err)});
   }
@@ -153,14 +160,13 @@ class Crispy {
   }
 
   async filter_message(username, message) {
-    let filters = []
-    filters.push(...this.filter, ...this.banned_users, ...this.banned_words, ...this.silenced_users,
-    ...this.silenced_words, ...this.cleared_users, ...this.cleared_words, this.bot, this.name_change)
-    let filter_set = new Set(filters)
+    let filter_set = new Set([...this.filter, ...this.banned_users, ...this.banned_words, ...this.silenced_users,
+    ...this.silenced_words, ...this.cleared_users, ...this.cleared_words, this.bot, this.name_change])
     let profile = await this.get_user_profile(username)
     for (let f of filter_set) {
       if (message.toLowerCase().includes(f.toLowerCase())  || f.toLowerCase() == username.toLowerCase() || f.toLowerCase() == profile.toLowerCase()) return false
     }
+    this.cache.add(message)
     return true
   }
 
@@ -193,11 +199,7 @@ class Crispy {
   async is_banned(username, message) {
     if (!message || !username) return 0
     let profile = await this.get_user_profile(username)
-    for (let t of this.banned_users) {
-      if (t.toLowerCase() == username.toLowerCase() || t.toLowerCase() == profile.toLowerCase()) {
-        return 1
-      }
-    }
+    if (this.banned_users.has(username.toLowerCase()) || this.banned_users.has(profile.toLowerCase())) return 1
     for (let t of this.banned_words) {
       if (message.toLowerCase().includes(t.toLowerCase())) {
         return 2
@@ -209,11 +211,7 @@ class Crispy {
   async is_cleared(username, message) {
     if (!message || !username) return 0
     let profile = await this.get_user_profile(username)
-    for (let t of this.cleared_users) {
-      if (t.toLowerCase() == username.toLowerCase() || t.toLowerCase() == profile.toLowerCase()) {
-        return 1
-      }
-    }
+    if (this.cleared_users.has(username.toLowerCase()) || this.cleared_words.has(profile.toLowerCase())) return 1
     for (let t of this.cleared_words) {
       if (message.toLowerCase().includes(t.toLowerCase())) {
         return 2
@@ -225,11 +223,7 @@ class Crispy {
   async is_silenced(username, message) {
     if (!message || !username) return 0
     let profile = await this.get_user_profile(username)
-    for (let t of this.silenced_users) {
-      if (t.toLowerCase() == username.toLowerCase() || t.toLowerCase() == profile.toLowerCase()) {
-        return 1
-      }
-    }
+    if (this.silenced_users.has(username.toLowerCase()) || this.silenced_users.has(profile.toLowerCase())) return 1
     for (let t of this.silenced_words) {
       if (message.toLowerCase().includes(t.toLowerCase())) {
         return 2
@@ -279,12 +273,10 @@ class Crispy {
 
   add_target(target) {
     if (target.constructor == String) {
-      if (!(this.targets.indexOf(target) >= 0))
-        this.targets.push(target)
+      this.targets.add(target)
     } else if (target.constructor == Array) {
       for (let t of target) {
-        if (!(this.targets.indexOf(t) >= 0))
-          this.targets.push(t)
+        this.targets.add(t)
       }
     }
     this.update_config({targets: this.targets})
@@ -292,16 +284,10 @@ class Crispy {
 
   del_target(target) {
     if (target.constructor == String) {
-      if (this.targets.indexOf(target) >= 0) {
-        let index = this.targets.indexOf(target)
-        if (index !== -1) this.targets.splice(index, 1)
-      }
+      this.targets.delete(target)
     } else if (target.constructor == Array) {
       for (let t of target) {
-        if (this.targets.indexOf(t) >= 0) {
-          let index = this.targets.indexOf(t)
-          if (index !== -1) this.targets.splice(index, 1)
-        }
+        this.targets.delete(t)
       }
     }
     this.update_config({targets: this.targets})
@@ -309,29 +295,21 @@ class Crispy {
 
   add_admin(admin) {
     if (admin.constructor == String) {
-      if (!(this.admins.indexOf(admin) >= 0))
-        this.admins.push(admin)
+      this.admins.add(admin)
     } else if (admin.constructor == Array) {
       for (let t of admin) {
-        if (!(this.admins.indexOf(t) >= 0))
-          this.admins.push(t)
+        this.admins.add(t)
       }
-    this.update_config({admins: this.admins})
     }
+    this.update_config({admins: this.admins})
   }
 
   del_admin(admin) {
     if (admin.constructor == String) {
-      if (this.admins.indexOf(admin) >= 0) {
-        let index = this.admins.indexOf(admin)
-        if (index !== -1) this.admins.splice(index, 1)
-      }
+      this.admins.delete(admin)
     } else if (admin.constructor == Array) {
       for (let t of admin) {
-        if (this.admins.indexOf(t) >= 0) {
-          let index = this.admins.indexOf(t)
-          if (index !== -1) this.admins.splice(index, 1)
-        }
+        this.admins.delete(t)
       }
     }
     this.update_config({admins: this.admins})
@@ -339,12 +317,10 @@ class Crispy {
 
   add_trigger(trigger) {
     if (trigger.constructor == String) {
-      if (!(this.triggers.indexOf(trigger) >= 0))
-        this.triggers.push(trigger)
+      this.triggers.add(trigger)
     } else if (trigger.constructor == Array) {
       for (let t of trigger) {
-        if (!(this.triggers.indexOf(t) >= 0))
-          this.triggers.push(t)
+        this.triggers.add(t)
       }
     }
     this.update_config({triggers: this.triggers})
@@ -352,38 +328,28 @@ class Crispy {
 
   del_trigger(trigger) {
     if (trigger.constructor == String) {
-      if (this.triggers.indexOf(trigger) >= 0) {
-        let index = this.triggers.indexOf(trigger)
-        if (index !== -1) this.triggers.splice(index, 1)
-      }
+      this.triggers.delete(trigger)
     } else if (trigger.constructor == Array) {
       for (let t of trigger) {
-        if (this.triggers.indexOf(t) >= 0) {
-          let index = this.triggers.indexOf(t)
-          if (index !== -1) this.triggers.splice(index, 1)
-        }
+        this.triggers.delete(t)
       }
     }
     this.update_config({triggers: this.triggers})
   }
 
   add_filter(message) {
-    if (!(this.filter.indexOf(message) >= 0))
-      this.filter.push(message)
+    this.filter.add(message)
     this.update_config({filter:  this.filter})
   }
 
   del_filter(message) {
-    if (this.filter.indexOf(message) >= 0) {
-      let index = this.filter.indexOf(message)
-      if (index !== -1) this.filter.splice(index, 1)
-    }
+    this.filter.delete(message)
     this.update_config({filter: this.filter})
   }
 
   async is_admin(username) {
     let profile = await this.get_user_profile(username)
-    return this.admins.indexOf(profile) >= 0
+    return this.admins.has(profile)
   }
 
   has_cache() {
@@ -391,17 +357,11 @@ class Crispy {
   }
 
   async send_message(message) {
-    this.sent.push(message)
+    this.cache.add(message)
     let chat = await this.browser.$('.chat__Input')
     await chat.setValue(message)
     let send = await this.browser.$('.chat__InputSubmit')
     await send.click()
-  }
-
-  async send_cached_message() {
-    if (this.has_cache()) {
-      await this.send_message(this.cache.pop(0))
-    }
   }
 
   async capture_message() {
@@ -517,7 +477,6 @@ class Crispy {
       } catch (err) {
         await this.scroll_userlist()
         await this.click_username(username)
-        // console.log(`\nTried to click ${username} but username is not displayed!`)
       }
     }
   }
@@ -556,83 +515,84 @@ class Crispy {
     return profile
   }
 
-  ban(username, notify=true) {
+  async ban(username, notify=true) {
     if (username) {
-      this.send_message(`${this.ban_command} ${username}`)
+      console.log('BANABNABNABNABNABNABNABNBANBANBANBANBANBA')
+      await this.send_message(`${this.ban_command} ${username}`)
       if (notify) {
-        this.send_message(this.ban_message)
+        await this.send_message(this.ban_message)
       }
     }
   }
 
-  unban(username, notify=true) {
+  async unban(username, notify=true) {
     if (username) {
-      this.send_message(`${this.unban_command} ${username}`)
+      await this.send_message(`${this.unban_command} ${username}`)
       if (notify) {
-        this.send_message(this.unban_message)
+        await this.send_message(this.unban_message)
       }
     }
   }
 
-  close(username, notify=true) {
+  async close(username, notify=true) {
     if (username) {
-      this.send_message(`${this.close_command} ${username}`)
+      await this.send_message(`${this.close_command} ${username}`)
       if (notify) {
-        this.send_message(this.close_message)
+        await this.send_message(this.close_message)
       }
     }
   }
 
-  silence(username, notify=true) {
+  async silence(username, notify=true) {
     if (username) {
-      this.send_message(`${this.silence_command} ${username}`)
+      await this.send_message(`${this.silence_command} ${username}`)
       if (notify) {
-        this.send_message(this.silence_message)
+        await this.send_message(this.silence_message)
       }
     }
   }
 
-  clear(notify=true) {
-    this.send_message(this.clear_command)
+  async clear(notify=true) {
+    await this.send_message(this.clear_command)
     if (notify) {
-      this.send_message(this.clear_message)
+      await this.send_message(this.clear_message)
     }
   }
 
-  msg(username,message, notify=true) {
+  async msg(username,message, notify=true) {
     if (username && message) {
-      this.send_message(`${this.msg_command} ${username} ${message}`)
+      await this.send_message(`${this.msg_command} ${username} ${message}`)
       if (notify) {
-        this.send_message(this.msg_message)
+        await this.send_message(this.msg_message)
       }
     }
   }
 
-  action(message, notify=true) {
+  async action(message, notify=true) {
     if (message) {
-      this.send_message(`${this.action_command} ${message}`)
+      await this.send_message(`${this.action_command} ${message}`)
       if (notify) {
-        this.send_message(this.action_message)
+        await this.send_message(this.action_message)
       }
     }
   }
 
-  nick(nickname, notify=true) {
+  async nick(nickname, notify=true) {
     if (nickname) {
-      this.send_message(`${this.nick_command} ${nickname}`)
+      await this.send_message(`${this.nick_command} ${nickname}`)
       this.bot = nickname
       this.update_config({bot: this.bot})
       if (notify) {
-        this.send_message(this.nick_message)
+        await this.send_message(this.nick_message)
       }
     }
   }
 
-  color(color, notify=true) {
+  async color(color, notify=true) {
     if (color) {
-      this.send_message(`${this.color_command} ${color}`)
+      await this.send_message(`${this.color_command} ${color}`)
       if (notify) {
-        this.send_message(this.color_message)
+        await this.send_message(this.color_message)
       }
     }
   }
@@ -644,7 +604,7 @@ class Crispy {
   set_vocabulary(name) {
     if (this.has_vocabulary(name)) {
       this.vocabulary = this.vocabularies[name]
-      this.cache = []
+      this.cache = new Set()
     }
   }
 
@@ -679,30 +639,11 @@ class Crispy {
   }
 
   generate_message() {
-    return this.vocabulary.predict({
-      init_state: null,
-      max_chars: this.max_len,
-      numberOfSentences: this.max_tries,
-      popularFirstWord: true
-    })
+  return this.vocabulary.make_sentence(this.max_len, {debug: this.debug, tries: this.max_tries, filter: this.cache, case_sensitive: this.case_sensitive})
   }
 
   generate_message_from(username, message) {
-    return this.vocabulary.make_sentence_from(message, this.max_len, this.min_len, {tries: this.max_tries, similarity: this.similarity_score, filter: this.sent, username: username, case_sensitive: this.case_sensitive})
-  }
-
-  generate_cached_message() {
-    if ((this.cache.length < this.max_cache) && this.vocabulary) {
-      let text = this.generate_message()
-      if (text) this.cache.push(text)
-    }
-  }
-
-  generate_cached_message_from(username, message) {
-    if ((this.cache.length < this.max_cache) && this.vocabulary) {
-      let text = this.generate_message_from(username,message)
-      if (text) this.cache.push(text)
-    }
+    return this.vocabulary.make_sentence_from(message, this.max_len, {debug: this.debug, tries: this.max_tries, similarity: this.similarity_score, filter: this.cache, username: username, case_sensitive: this.case_sensitive})
   }
 
   current_time() {
@@ -714,7 +655,6 @@ class Crispy {
     if (kwargs.sync) save = fs.writeFileSync
     if ((this.current_time()-this.last_save > this.save_interval*60000) || kwargs.force) {
       this.last_save = this.current_time()
-      this.cache = []
       for (let name in this.vocabularies) {
         if (this.vocabularies[name].training) {
           save(this.vocabularies[name].file, this.vocabularies[name].get_text(), 'utf8', (err) => {if (this.debug) console.log(err)})
@@ -733,26 +673,26 @@ class Crispy {
 
   async answer_to(username, message) {
     let text = this.generate_message_from(username, message)
-    if (text)
+    if (text) {
+      this.cache.add(text)
       await this.send_message(text)
-    else
-      this.send_cached_message()
+    }
   }
 
-  wipe_sent_messages(kwargs={}) {
+  wipe_cache(kwargs={}) {
     if ((this.current_time()-this.last_wipe > this.wipe_interval*60000) || kwargs.force) {
       this.last_wipe = this.current_time()
-      this.sent = []
+      this.cache = new Set()
     }
   }
 
   force_wipe() {
-    this.wipe_sent_messages({force: true})
+    this.wipe_cache({force: true})
   }
 
-  spam(text, amount) {
+  async spam(text, amount) {
     for (let i=0; i < amount; i++) {
-      this.send_message(text)
+      await this.send_message(text)
     }
   }
 
@@ -773,9 +713,9 @@ class Crispy {
   async check_for_banned(username, message) {
     let banned = await this.is_banned(username, message)
     if (banned) {
-      this.ban(username)
+      await this.ban(username)
       if (banned == 2 && this.clear_banned) {
-        this.clear()
+        await this.clear()
       }
       return true
     }
@@ -785,7 +725,7 @@ class Crispy {
   async check_for_cleared(username, message) {
     let cleared = await this.is_cleared(username, message)
     if (cleared) {
-      this.clear()
+      await this.clear()
       return true
     }
     return false
@@ -794,7 +734,7 @@ class Crispy {
   async check_for_silenced(username, message) {
     let silenced = await this.is_silenced(username, message)
     if (silenced) {
-      this.silence(username)
+      await this.silence(username)
       return true
     }
     return false
@@ -811,8 +751,8 @@ class Crispy {
       try {
         let username = await handle.getText()
         let profile = await this.get_user_profile(username)
-        if (this.closed_users.indexOf(username) >= 0 || this.closed_users.indexOf(profile) >= 0)
-          this.close(username)
+        if (this.closed_users.has(username) || this.closed_users.has(profile))
+          await this.close(username)
       } catch(err) {
         if (this.debug) console.log(err)
       }
@@ -829,125 +769,102 @@ class Crispy {
     await this.refresh({force: true})
   }
 
-  add_banned(kwargs={}) {
-    for (b in kwargs.users) {
-      if (!(this.banned_users.indexOf(b) >= 0)) {
-        this.banned_users.push(b)
-        this.ban(b)
-      }
+  async add_banned(kwargs = {}) {
+    if (!kwargs.users) kwargs.users = []
+    if (!kwargs.words) kwargs.words = []
+    for (let b of kwargs.users) {
+      this.banned_users.add(b)
     }
-    for (let b in kwargs.words) {
-      if (!(this.banned_words.indexOf(b) >= 0)) {
-        this.banned_words.push(b)
-        this.ban(b)
-      }
+    for (let b of kwargs.words) {
+      this.banned_words.add(b)
     }
     this.update_config({banned_words: this.banned_words, banned_users: this.banned_users})
   }
 
-  del_banned(kwargs={}) {
-    for (b in kwargs.users) {
-      if (this.banned_users.indexOf(b) >= 0) {
-        let index = this.banned_users.indexOf(b)
-        if (index !== -1) this.banned_users.splice(index, 1)
-        this.unban(b)
-      }
+  async del_banned(kwargs={}) {
+    if (!kwargs.users) kwargs.users = []
+    if (!kwargs.words) kwargs.words = []
+    for (let b of kwargs.users) {
+      this.banned_users.delete(b)
     }
-    for (let b in kwargs.words) {
-      if (this.banned_words.indexOf(b) >= 0) {
-        let index = this.banned_words.indexOf(b)
-        if (index !== -1) this.banned_words.splice(index, 1)
-        this.unban(b)
-      }
+    for (let b of kwargs.words) {
+      this.banned_words.delete(b)
     }
     this.update_config({banned_words: this.banned_words, banned_users: this.banned_users})
   }
 
   add_cleared(kwargs={}) {
-    for (b in kwargs.users) {
-      if (!(this.cleared_users.indexOf(b) >= 0)) {
-        this.cleared_users.push(b)
-      }
+    if (!kwargs.users) kwargs.users = []
+    if (!kwargs.words) kwargs.words = []
+    for (let b of kwargs.users) {
+      this.cleared_users.add(b)
     }
-    for (let b in kwargs.words) {
-      if (!(this.cleared_words.indexOf(b) >= 0)) {
-        this.cleared_words.push(b)
-      }
+    for (let b of kwargs.words) {
+      this.cleared_words.add(b)
     }
     this.update_config({cleared_words: this.cleared_words, cleared_users: this.cleared_users})
   }
 
   del_cleared(kwargs={}) {
-    for (b in kwargs.users) {
-      if (this.cleared_users.indexOf(b) >= 0) {
-        let index = this.cleared_users.indexOf(b)
-        if (index !== -1) this.cleared_users.splice(index, 1)
-      }
+    if (!kwargs.users) kwargs.users = []
+    if (!kwargs.words) kwargs.words = []
+    for (let b of kwargs.users) {
+      this.cleared_users.delete(b)
     }
-    for (let b in kwargs.words) {
-      if (this.cleared_words.indexOf(b) >= 0) {
-        let index = this.cleared_words.indexOf(b)
-        if (index !== -1) this.cleared_words.splice(index, 1)
-      }
+    for (let b of kwargs.words) {
+      this.cleared_words.delete(b)
     }
     this.update_config({cleared_words: this.cleared_words, cleared_users: this.cleared_users})
   }
 
   add_silenced(kwargs={}) {
-    for (let b in kwargs.users) {
-      if (!(this.silenced_users.indexOf(b) >= 0))
-        this.silenced_users.push(b)
+    if (!kwargs.users) kwargs.users = []
+    if (!kwargs.words) kwargs.words = []
+    for (let b of kwargs.users) {
+      this.silenced_users.add(b)
     }
-    for (let b in kwargs.words) {
-      if (!(this.silenced_words.indexOf(b) >= 0))
-        this.silenced_words.push(b)
+    for (let b of kwargs.words) {
+      this.silenced_words.add(b)
     }
     this.update_config({silenced_words: this.silenced_words, silenced_users: this.silenced_users})
   }
 
   del_silenced(kwargs={}) {
-    for (let b in kwargs.users) {
-      if (this.silenced_users.indexOf(b) >= 0) {
-        let index = this.silenced_users.indexOf(b)
-        if (index !== -1) this.silenced_users.splice(index, 1)
-      }
+    if (!kwargs.users) kwargs.users = []
+    if (!kwargs.words) kwargs.words = []
+    for (let b of kwargs.users) {
+      this.silenced_users.delete(b)
     }
-    for (let b in kwargs.words) {
-      if (this.silenced_words.indexOf(b) >= 0) {
-        let index = this.silenced_words.indexOf(b)
-        if (index !== -1) this.silenced_words.splice(index, 1)
-      }
+    for (let b of kwargs.words) {
+      this.silenced_words.delete(b)
     }
     this.update_config({silenced_words: this.silenced_words, silenced_users: this.silenced_users})
   }
 
   add_closed(users) {
-    for (let b in users) {
-      if (!(this.closed_users.indexOf(b) >= 0))
-        this.closed_users.push(b)
+    if (!users) users = []
+    for (let b of users) {
+      this.closed_users.add(b)
     }
     this.update_config({closed_users: this.closed_users})
   }
 
   del_closed(users) {
-    for (let b in users) {
-      if (this.closed_users.indexOf(b) >= 0) {
-        let index = this.closed_users.indexOf(b)
-        if (index !== -1) this.closed_users.splice(index, 1)
-      }
+    if (!users) users = []
+    for (let b of users) {
+      this.closed_users.delete(b)
     }
     this.update_config({closed_users: this.closed_users})
   }
 
   async check_for_routines() {
-    this.generate_cached_message()
-    this.wipe_sent_messages()
+    this.wipe_cache()
     this.save()
     this.refresh()
   }
 
   check_name_change(username, message) {
-    if (!username && message) {
+    if (!username && message.includes(this.name_change)) {
       username = message.split(this.name_change)
       if (username.length == 2)
         username = username[1].trim()
@@ -956,9 +873,10 @@ class Crispy {
   }
 
   async check_for_command(username, message, id) {
-    if (this.is_command(message) && this.last_message != id) {
+    if (this.is_command(message)) {
       if (await this.is_admin(username)) {
-        await this.try_command(username, message)
+        console.log(message)
+        if (this.last_message != id) await this.try_command(username, message)
       } else {
         await this.send_message(this.deny_message)
       }
@@ -975,8 +893,9 @@ class Crispy {
           await this.login()
         }
         while (this.logged_in) {
+          if (this.exit) await this.shutdown()
           this.check_for_routines()
-          //await this.check_for_closed() // Takes too much time
+          await this.check_for_closed()
           let {username, message, id} = await this.capture_message()
           if (this.debug) console.log({username: username, message: message, id: id})
           if (!this.is_bot(username)) {
@@ -988,7 +907,7 @@ class Crispy {
                 message = action.message
               }
               if (await this.filter_message(username, message)) {
-                this.check_for_triggers(username, message)
+                await this.check_for_triggers(username, message)
                 this.train_vocabulary(username, message, id)
               } else if (this.has_user_account() && this.last_message != id) {
                 username = this.check_name_change(username, message)
@@ -1005,18 +924,15 @@ class Crispy {
       }
     } catch (err) {
       if (this.debug) console.log(err)
-      this.shutdown(this)
+      await this.shutdown()
     }
   }
 
-  shutdown(bot) {
-    if (bot == null) bot = this
-    bot.save({force: true, sync: true})
+  shutdown() {
     console.log('\nSaving and shutting down!\n')
-    if (bot.browser) {
-      bot.browser.shutdown()
-      bot.browser = null
-    }
+    this.save({ force: true, sync: true })
+    this.browser.closeWindow()
+    cd.stop()
     process.exit()
   }
 }

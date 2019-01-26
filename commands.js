@@ -17,12 +17,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 module.exports = {
-
-
   save_command: async (kwargs) => {
     let crispy = kwargs.crispy
     if (crispy) {
-      crispy.force_save()
+      await crispy.force_save()
       await crispy.send_message('Training data has been saved!')
     }
   },
@@ -33,10 +31,10 @@ module.exports = {
       let args = kwargs.args
       if (args) {
         if (args[0] == 'word' || args[0] == 'words') {
-          crispy.add_banned(words=args.slice(1))
+          await crispy.add_banned({words: args.slice(1)})
           await crispy.send_message(`Word(s) ${args.slice(1).join(', ')} have been added to the ban list!`)
         } else if (args[0] == 'user' || args[0] == 'user') {
-          crispy.add_banned(users=args.slice(1))
+          await crispy.add_banned({users: args.slice(1)})
           await crispy.send_message(`User(s) ${args.slice(1).join(', ')} have been added to the ban list!`)
         } else {
           await crispy.send_message('Please specify "word" or "user" as the second argument!')
@@ -52,10 +50,10 @@ module.exports = {
       let args = kwargs.args
       if (args) {
         if (args[0] == 'word' || args[0] == 'words') {
-          crispy.del_banned(words=args.slice(1))
+          await crispy.del_banned({words: args.slice(1)})
           await crispy.send_message(`Word(s) ${args.slice(1).join(', ')} have been removed from the ban list!`)
         } else if (args[0] == 'user' || args[0] == 'user') {
-          crispy.del_banned(users=args.slice(1))
+          await crispy.del_banned({users: args.slice(1)})
           await crispy.send_message(`User(s) ${args.slice(1).join(', ')} have been removed from the ban list!`)
         } else {
           await crispy.send_message('Please specify "word" or "user" as the second argument!')
@@ -71,10 +69,10 @@ module.exports = {
       let args = kwargs.args
       if (args) {
         if (args[0] == 'word' || args[0] == 'words') {
-          crispy.add_cleared(words=args.slice(1))
+          await crispy.add_cleared({words: args.slice(1)})
           await crispy.send_message(`Word(s) ${args.slice(1).join(', ')} have been added to the cleared words list!`)
         } else if (args[0] == 'user' || args[0] == 'user') {
-          crispy.add_cleared(users=args.slice(1))
+          await crispy.add_cleared({users: args.slice(1)})
           await crispy.send_message(`User(s) ${args.slice(1).join(', ')} have been added to the cleared users list!`)
         } else {
           await crispy.send_message('Please specify "word" or "user" as the second argument!')
@@ -90,10 +88,10 @@ module.exports = {
       let args = kwargs.args
       if (args) {
         if (args[0] == 'word' || args[0] == 'words') {
-          crispy.del_cleared(words=args.slice(1))
+          await crispy.del_cleared({words: args.slice(1)})
           await crispy.send_message(`Word(s) ${args.slice(1).join(', ')} have been removed from the cleared words list!`)
         } else if (args[0] == 'user' || args[0] == 'user') {
-          crispy.del_cleared(users=args.slice(1))
+          await crispy.del_cleared({users: args.slice(1)})
           await crispy.send_message(`User(s) ${args.slice(1).join(', ')} have been removed from the cleared users list!`)
         } else {
           await crispy.send_message('Please specify "word" or "user" as the second argument!')
@@ -109,10 +107,10 @@ module.exports = {
       let args = kwargs.args
       if (args) {
         if (args[0] == 'word' || args[0] == 'words') {
-          crispy.add_silenced(words=args.slice(1))
+          await crispy.add_silenced({words: args.slice(1)})
           await crispy.send_message(`Word(s) ${args.slice(1).join(', ')} have been added to the silenced words list!`)
         } else if (args[0] == 'user' || args[0] == 'user') {
-          crispy.add_silenced(users=args.slice(1))
+          await crispy.add_silenced({users: args.slice(1)})
           await crispy.send_message(`User(s) ${args.slice(1).join(', ')} have been added to the silenced users list!`)
         } else {
           await crispy.send_message('Please specify "word" or "user" as the second argument!')
@@ -128,10 +126,10 @@ module.exports = {
       let args = kwargs.args
       if (args) {
         if (args[0] == 'word' || args[0] == 'words') {
-          crispy.del_silenced(words=args.slice(1))
+          await crispy.del_silenced({words: args.slice(1)})
           await crispy.send_message(`Word(s) ${args.slice(1).join(', ')} have been removed from the silenced words list!`)
         } else if (args[0] == 'user' || args[0] == 'user') {
-          crispy.del_silenced(users=args.slice(1))
+          await crispy.del_silenced({users: args.slice(1)})
           await crispy.send_message(`User(s) ${args.slice(1).join(', ')} have been removed from the silenced users list!`)
         } else {
           await crispy.send_message('Please specify "word" or "user" as the second argument!')
@@ -146,7 +144,7 @@ module.exports = {
     if (crispy) {
       let args = kwargs.args
       if (args) {
-        crispy.add_closed(args)
+        await crispy.add_closed(args)
         await crispy.send_message(`User(s) ${args.join(', ')} have been added to the closed list!`)
       }
     }
@@ -157,7 +155,7 @@ module.exports = {
     if (crispy) {
       let args = kwargs.args
       if (args) {
-        crispy.del_closed(args)
+        await crispy.del_closed(args)
         await crispy.send_message(`User(s) ${args.join(', ')} have been removed from the closed list!`)
       }
     }
@@ -166,7 +164,7 @@ module.exports = {
   refresh_command: async (kwargs) => {
     let crispy = kwargs.crispy
     if (crispy) {
-      crispy.force_refresh()
+      await crispy.force_refresh()
     }
   },
 
@@ -175,7 +173,7 @@ module.exports = {
     if (crispy) {
       let args = kwargs.args
       if (args) {
-        crispy.add_target(args)
+        await crispy.add_target(args)
         await crispy.send_message(`User(s) ${args.join(', ')} have been added to targets!`)
       }
     }
@@ -186,7 +184,7 @@ module.exports = {
     if (crispy) {
       let args = kwargs.args
       if (args) {
-        crispy.del_target(args)
+        await crispy.del_target(args)
         await crispy.send_message(`User(s) ${args.join(', ')} have been removed from targets!`)
       }
     }
@@ -197,7 +195,7 @@ module.exports = {
     if (crispy) {
       let args = kwargs.args
       if (args) {
-        crispy.add_admin(args)
+        await crispy.add_admin(args)
         await crispy.send_message(`User(s) ${args.join(', ')} have been added to admins!`)
       }
     }
@@ -208,7 +206,7 @@ module.exports = {
     if (crispy) {
       let args = kwargs.args
       if (args) {
-        crispy.del_admin(args)
+        await crispy.del_admin(args)
         await crispy.send_message(`User(s) ${args.join(', ')} have been removed from admins!`)
       }
     }
@@ -219,7 +217,7 @@ module.exports = {
     if (crispy) {
       let args = kwargs.args
       if (args) {
-        crispy.add_trigger(args)
+        await crispy.add_trigger(args)
         await crispy.send_message(`Word(s) ${args.join(', ')} have been added to triggers!`)
       }
     }
@@ -230,7 +228,7 @@ module.exports = {
     if (crispy) {
       let args = kwargs.args
       if (args) {
-        crispy.del_trigger(args)
+        await crispy.del_trigger(args)
         await crispy.send_message(`Word(s) ${args.join(', ')} have been removed from triggers!`)
       }
     }
@@ -241,7 +239,7 @@ module.exports = {
     if (crispy) {
       let args = kwargs.args
       if (args) {
-        crispy.add_filter(args.join(' '))
+        await crispy.add_filter(args.join(' '))
         await crispy.send_message(`The phrase "${args.join(' ')}" have been added to filters!`)
       }
     }
@@ -252,7 +250,7 @@ module.exports = {
     if (crispy) {
       let args = kwargs.args
       if (args) {
-        crispy.del_filter(args.join(' '))
+        await crispy.del_filter(args.join(' '))
         await crispy.send_message(`The phrase "${args.join(' ')}" have been removed from filters!`)
       }
     }
@@ -261,7 +259,7 @@ module.exports = {
   wipe_command: async (kwargs) => {
     let crispy = kwargs.crispy
     if (crispy) {
-      crispy.force_wipe()
+      await crispy.force_wipe()
       await crispy.send_message('Wiped sent messages cache!')
     }
   },
@@ -271,7 +269,7 @@ module.exports = {
     if (crispy) {
       let args = kwargs.args
       if (args) {
-        crispy.answer_to(kwargs.user, args.join(' '))
+        await crispy.answer_to(kwargs.username, args.join(' '))
       }
     }
   },
@@ -281,7 +279,7 @@ module.exports = {
     if (crispy) {
       let args = kwargs.args
       if (args) {
-        crispy.forget(args.join(' '))
+        await crispy.forget(args.join(' '))
         await crispy.send_message(`Phrases containing "${args.join(' ')}" have been forgotten!`)
       }
     }
@@ -293,7 +291,7 @@ module.exports = {
       let args = kwargs.args
       if (args) {
         if (crispy.has_vocabulary(args[0])) {
-          crispy.set_vocabulary(args[0])
+          await crispy.set_vocabulary(args[0])
           await crispy.send_message(`Now using ${args[0]} vocabulary!`)
         } else {
           await crispy.send_message(`Vocabulary ${args[0]} not found!`)
@@ -319,7 +317,7 @@ module.exports = {
             try {
               let value = old_value.constructor(new_value)
               if (value) {
-                crispy.update_config({ [args[0]]: value })
+                await crispy.update_config({ [args[0]]: value })
                 await crispy.send_message(`Updated config variable: ${args[0]} = ${new_value}`)
               }
             } catch {
@@ -340,7 +338,7 @@ module.exports = {
     if (crispy) {
       let args = kwargs.args
       if (args) {
-        crispy.color(args[0])
+        await crispy.color(args[0])
       }
     }
   },
@@ -350,65 +348,65 @@ module.exports = {
     if (crispy) {
       let args = kwargs.args
       if (args) {
-        crispy.nick(args[0])
+        await crispy.nick(args[0])
       }
     }
   },
 
   admins_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let user = kwargs.user
-    text = 'Admin users:'
+    let username = kwargs.username
+    let text = 'Admin users:'
     if (crispy) {
       for (let user of crispy.admins) {
         if ((text+user).length < 200) {
           text = `${text} ${user}`
         } else {
-          await crispy.msg(user, text, false)
-          text = ''
+          await crispy.msg(username, text, false)
+          text = user
         }
       }
-      await crispy.msg(user, text)
+      await crispy.msg(username, text)
     }
   },
 
   targets_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let user = kwargs.user
-    text = 'Target users:'
+    let username = kwargs.username
+    let text = 'Target users:'
     if (crispy) {
       for (let user of crispy.targets) {
         if ((text+user).length < 200) {
           text = `${text} ${user}`
         } else {
           await crispy.msg(user, text, false)
-          text = ''
+          text = user
         }
       }
-      await crispy.msg(user, text)
+      await crispy.msg(username, text)
     }
   },
 
   triggers_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let user = kwargs.user
-    text = 'Trigger words:'
+    let username = kwargs.username
+    let text = 'Trigger words:'
     if (crispy) {
       for (let word of crispy.triggers) {
         if ((text+word).length < 200) {
           text = `${text} ${word}`
         } else {
           await crispy.msg(user, text, false)
-          text = ''
+          text = user
         }
       }
-      await crispy.msg(user, text)
+      await crispy.msg(username, text)
     }
   },
 
   closed_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let user = kwargs.user
+    let username = kwargs.username
     let text = 'Closed users:'
     if (crispy) {
       for (let user of crispy.closed_users) {
@@ -416,16 +414,16 @@ module.exports = {
           text = `${text} ${user}`
         } else {
           await crispy.msg(user, text, false)
-          text = ''
+          text = user
         }
       }
-      await crispy.msg(user, text)
+      await crispy.msg(username, text)
     }
   },
 
   banned_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let user = kwargs.user
+    let username = kwargs.username
     if (crispy) {
       let args = kwargs.args
       if (args) {
@@ -441,11 +439,11 @@ module.exports = {
             if ((text+el).length < 200) {
               text = `${text} ${el}`
             } else {
-              await crispy.msg(user, text, false)
-              text = ''
+              await crispy.msg(username, text, false)
+              text = el
             }
           }
-          await crispy.msg(user, text)
+          await crispy.msg(username, text)
         } else {
           await crispy.send_message(crispy.deny_message)
         }
@@ -457,7 +455,7 @@ module.exports = {
 
   cleared_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let user = kwargs.user
+    let username = kwargs.username
     if (crispy) {
       let args = kwargs.args
       if (args) {
@@ -473,11 +471,11 @@ module.exports = {
             if ((text+el).length < 200) {
               text = `${text} ${el}`
             } else {
-              await crispy.msg(user, text, false)
-              text = ''
+              await crispy.msg(username, text, false)
+              text = el
             }
           }
-          await crispy.msg(user, text)
+          await crispy.msg(username, text)
         } else {
           await crispy.send_message(crispy.deny_message)
         }
@@ -489,7 +487,7 @@ module.exports = {
 
   silenced_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let user = kwargs.user
+    let username = kwargs.username
     if (crispy) {
       let args = kwargs.args
       if (args) {
@@ -505,11 +503,11 @@ module.exports = {
             if ((text+el).length < 200) {
               text = `${text} ${el}`
             } else {
-              await crispy.msg(user, text, false)
-              text = ''
+              await crispy.msg(username, text, false)
+              text = el
             }
           }
-          await crispy.msg(user, text)
+          await crispy.msg(username, text)
         } else {
           await crispy.send_message(crispy.deny_message)
         }
@@ -521,12 +519,12 @@ module.exports = {
 
   help_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let user = kwargs.user
+    let username = kwargs.username
     if (crispy) {
       let args = kwargs.args
       if (args) {
         if (crispy.is_command(crispy.prefix+args[0])) {
-          await crispy.msg(user, crispy.command_help[args[0]])
+          await crispy.msg(username, crispy.command_help[args[0]])
         } else {
           await crispy.send_message(crispy.deny_message)
         }
@@ -536,11 +534,11 @@ module.exports = {
           if ((text+command).length < 200) {
             text = `${text} ${command}`
           } else {
-            await crispy.msg(user, text, false)
-            text = ''
+            await crispy.msg(username, text, false)
+            text = command
           }
         }
-        await crispy.msg(user, text)
+        await crispy.msg(username, text)
       }
     }
   }

@@ -1,0 +1,29 @@
+{
+  "name": "crispy",
+  "version": "1.0.0",
+  "description": "An annoying bot.",
+  "main": "index.js",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "start": "node example/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sighmir/Crispy.git"
+  },
+  "author": "Guilherme Caulada (Sighmir)",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/Sighmir/Crispy/issues"
+  },
+  "homepage": "https://github.com/Sighmir/Crispy#readme",
+  "dependencies": {
+    "chromedriver": "^2.45.0",
+    "node-markovify": "^1.0.3",
+    "pos": "^0.4.2",
+    "sequencematcher": "^1.0.11",
+    "webdriverio": "^5.4.7"
+  }
+}
