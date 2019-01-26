@@ -22,8 +22,8 @@ to make a bot to keep up with him.
 ## Requirements
 This project uses [chromedriver](https://www.npmjs.com/package/chromedriver),
 [node-markovify](https://www.npmjs.com/package/node-markovify), [pos](https://www.npmjs.com/package/pos),
-[sequencematcher](https://www.npmjs.com/package/sequencematcher) and [webdriverio](https://www.npmjs.com/package/sequencematcher)
-those can be installed with `npm install` following the installation instructions.  
+[sequencematcher](https://www.npmjs.com/package/sequencematcher) and [webdriverio](https://www.npmjs.com/package/sequencematcher).  
+All requirements can be installed with `npm install` following the installation instructions.  
 This project was made using **NodeJS v10.3.0**, it was **not tested** for any other versions.
 
 ## Installation
