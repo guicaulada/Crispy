@@ -29,7 +29,7 @@ let Crispy = require('./crispy')
 const fs = require('fs')
 let config = fs.readFileSync('config.json', 'utf8')
 
-crispy = await new Crispy(JSON.parse(config))
+let crispy = await new Crispy(JSON.parse(config))
 
 crispy.username = config.username || process.env['CRISPY_USERNAME']
 crispy.password = config.password || process.env['CRISPY_PASSWORD']
@@ -37,11 +37,11 @@ crispy.password = config.password || process.env['CRISPY_PASSWORD']
 crispy.add_vocabulary('sherlock', {file: 'models/sherlock.txt', state_size: 3})
 crispy.add_vocabulary('biglebowski', { file: 'models/biglebowski.txt', state_size: 3})
 crispy.add_vocabulary('mixed', { file: 'models/mixed.txt', state_size: 3, training: true})
-//crispy.add_vocabulary('parrot', { file: 'models/parrot.json', state_size: 3, training: true})
+crispy.add_vocabulary('parrot', { file: 'models/parrot.json', state_size: 3, training: true})
 
-crispy.set_vocabulary('mixed')
+crispy.set_vocabulary('parrot')
 
-let cmds = crispy.get_default_commands()
+let cmds = crispy.default_commands()
 crispy.set_command('help', cmds.help_command, 'help [<command>] - Private message the list of commands or specific help about a command.')
 crispy.set_command('save', cmds.save_command, 'save - Saves training data and cleans cached messages.')
 crispy.set_command('ban', cmds.ban_command, 'ban <users|words> <targets> - Add users or words to the banned list.')
@@ -50,8 +50,8 @@ crispy.set_command('clear', cmds.clear_command, 'clear <users|words> <targets> -
 crispy.set_command('unclear', cmds.unclear_command, 'unclear <users|words> <targets> - Remove users or words from the cleared list.')
 crispy.set_command('silence', cmds.silence_command, 'silence <users|words> <targets> - Add users or words to the silenced list.')
 crispy.set_command('unsilence', cmds.unsilence_command, 'unsilence <users|words> <targets> - Remove users or words from the silenced list.')
-crispy.set_command('close', cmds.close_command, 'close <usernames> - Add users to the closed list, the bot will close his cam automatically.')
-crispy.set_command('unclose', cmds.unclose_command, 'unclose <usernames> - Remove users from the closed list.')
+// crispy.set_command('close', cmds.close_command, 'close <usernames> - Add users to the closed list, the bot will close his cam automatically.')
+// crispy.set_command('unclose', cmds.unclose_command, 'unclose <usernames> - Remove users from the closed list.') // This feature makes the bot slow
 crispy.set_command('refresh', cmds.refresh_command, 'refresh - Make the bot refresh the page.')
 crispy.set_command('target', cmds.target_command, 'target <usernames> - Add users to the targets list, the bot will answer those users.')
 crispy.set_command('untarget', cmds.untarget_command, 'untarget <usernames> - Remove users from the targets list.')

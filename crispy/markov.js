@@ -22,105 +22,143 @@ const pos = require('pos')
 
 class MarkovText extends mv.markovText {
   constructor(kwargs) {
-    super(kwargs)
+    super()
+    let json = kwargs.json
+    let user_model = {}
+    let mixed_model = {}
+    let mixed_corpus = []
+    let json_data = {}
     if (kwargs.json) {
-      this.json = true
-      this.user_model = {}
-      this.mixed_corpus = []
-      this.user_corpus = JSON.parse(kwargs.json)
-      for (let user in this.user_corpus) {
-        kwargs.corpus = this.user_corpus[user]
-        this.user_model[user] = new MarkovText(kwargs)
-        this.mixed_corpus.push(...this.user_corpus[user])
+      json_data = JSON.parse(kwargs.json)
+      kwargs.json = false
+      for (let user in json_data) {
+        kwargs.corpus = json_data[user]
+        user_model[user] = new MarkovText(kwargs)
+        user_model[user].username = user
+        mixed_corpus.push(...json_data[user])
       }
-      kwargs.corpus = this.mixed_corpus
-      this.mixedModel = new MarkovText(kwargs)
+      kwargs.corpus = mixed_corpus
+      mixed_model = new MarkovText(kwargs)
     }
-    this.file = kwargs.file
-    this.training = kwargs.training
+    if (kwargs.corpus.length > 25) {
+      this.init(kwargs)
+      this.file = kwargs.file
+      this.training = kwargs.training
+      this.user_model = user_model
+      this.mixed_model = mixed_model
+      this.json_data = json_data
+      this.json = json
+      this.ready = true
+    }
   }
 
   make_sentence_from(message, max_chars, min_chars=0, kwargs) {
-    let tries = kwargs['tries', 10]
-    let case_sensitive = kwargs['case_sensitive'] != null ? kwargs['case_sensitive'] : true
-    let similarity = kwargs['similarity', 0.5]
-    let filter = kwargs['filter'] || []
+    let tries = kwargs.tries != null ? kwargs.tries : 10
+    let case_sensitive = kwargs.case_sensitive != null ? kwargs['case_sensitive'] : true
+    let similarity = kwargs.similarity != null ? kwargs.similarity : 0.5
+    let filter = kwargs.filter || []
     let words = new pos.Lexer().lex(message)
     let tags = new pos.Tagger().tag(words)
-    keywords = () => {
+    let keywords = (() => {
       let k = []
       if (case_sensitive) for (let t of tags) if (t[1][0] == 'N' || t[1][0] == 'R' || t[1][0] == 'V') k.push(t[0])
       else for (let t of tags) if (t[1][0] == 'N' || t[1][0] == 'R' || t[1][0] == 'V') k.push(t[0].toLowerCase())
-      return k
+      return Array.from(new Set(k))
+    })()
+    let model = this
+    if (model.json) {
+      model = this.mixed_model
+      if (kwargs.username) {
+        if (this.user_model[kwargs.username] && this.user_model[kwargs.username].ready) {
+          model = this.user_model[kwargs.username]
+          model.username = kwargs.username
+        }
+      }
     }
-    let sentences = this.predict({
+    let sentences = new Set(model.predict({
       init_state: null,
       max_chars: max_chars,
       numberOfSentences: tries,
-      popularFirstWord: true
-    })
-    for (let sentence in sentences) {
-      if (!(sentence in filter)) {
-        let s_words = new pos.Lexer().lex(message)
-        var s_tags = new pos.Tagger().tag(words)
-        keywords = () => {
+      popularFirstWord: false
+    }))
+    for (let sentence of sentences) {
+      if (!(filter.indexOf(sentence) >= 0)) {
+        let s_words = new pos.Lexer().lex(sentence)
+        var s_tags = new pos.Tagger().tag(s_words)
+        let s_keywords = (() => {
           let k = []
-          if (case_sensitive) for (let t of s_tags) if (t[0] in keywords()) k.push(t[0])
-          else for (let t of s_tags) if (t[0] in keywords()) k.push(t[0].toLowerCase())
-          return k
-        }
+          if (case_sensitive) for (let t of s_tags) if (keywords.indexOf(t[0]) >= 0) k.push(t[0])
+          else for (let t of s_tags) if (keywords.indexOf(t[0]) >= 0) k.push(t[0].toLowerCase())
+          return Array.from(new Set(k))
+        })()
         if (sm.sequenceMatcher(keywords, s_keywords) > similarity) {
           return sentence
         }
       }
     }
+    if (model.username) {
+      kwargs.username = false
+      this.make_sentence_from(message, max_chars, min_chars, kwargs)
+    }
   }
 
-  add_text(text, kwargs) {
+  async add_text(text, kwargs) {
     if (!this.has_text(text, kwargs)) {
       if (this.json) {
-        this.mixedModel.corpus.push(text)
-        this.mixedModel = new MarkovText(this.mixedModel)
+        this.mixed_model.corpus.push(text)
+        this.mixed_model.init(this.mixed_model)
         if (kwargs.username) {
-          this.user_corpus[kwargs.username].push(text)
+          if (!this.json_data[kwargs.username]) {
+            this.json_data[kwargs.username] = []
+            this.user_model[kwargs.username] = {text: [], corpus: []}
+          }
+          this.json_data[kwargs.username].push(text)
           this.user_model[kwargs.username].corpus.push(text)
-          this.user_model[kwargs.username] = new MarkovText(this.user_model[kwargs.username])
+          this.user_model[kwargs.username].init(this.user_model[kwargs.username])
         }
       } else {
-        this.corpus.push(text+'\n')
-        this.constructor(this)
+        this.corpus.push(text)
+        this.init(this)
       }
     }
   }
 
-  has_text(text, kwargs) {
+   has_text(text, kwargs) {
     if (this.json) {
       if (kwargs.username) {
-        return text in this.user_model[kwargs.username].corpus
+        if (!this.json_data[kwargs.username]) {
+          this.json_data[kwargs.username] = []
+          this.user_model[kwargs.username] = {text: [], corpus: []}
+        }
+        return this.user_model[kwargs.username].corpus.indexOf(text) >= 0
       } else {
-        return text in this.mixedModel.corpus
+        return this.mixed_model.corpus.indexOf(text) >= 0
       }
     } else {
-      return text in this.corpus
+      return this.corpus.indexOf(text) >= 0
     }
   }
 
-  del_text(text, kwargs) {
+  async del_text(text, kwargs) {
     if (this.json) {
-      this.mixedModel.corpus = this.mixedModel.corpus.filter(word => word != text)
-      this.mixedModel = new MarkovText(this.mixedModel)
+      this.mixed_model.corpus = this.mixed_model.corpus.filter(word => word != text)
+      this.mixed_model = new MarkovText(this.mixed_model)
       if (kwargs.username) {
+        if (!this.json_data[kwargs.username]) {
+          this.json_data[kwargs.username] = []
+          this.user_model[kwargs.username] = { text: '', corpus: [] }
+        }
         this.user_model[kwargs.username].corpus = this.user_model[kwargs.username].corpus.filter(word => word != text)
         this.user_model[kwargs.username] = new MarkovText(this.user_model[kwargs.username])
       }
     } else {
       this.corpus = this.corpus.filter(word => word != text)
-      this.constructor(this)
+      this.init(this)
     }
   }
 
   get_text() {
-    if (this.json) return JSON.stringify(this.user_corpus, null, 2)
+    if (this.json) return JSON.stringify(this.json_data, null, 2)
     else return this.corpus.join('\n')
   }
 }
