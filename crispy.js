@@ -16,6 +16,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+console.log(`Crispy - An annoying bot.  Copyright (C) 2018  Guilherme Caulada (Sighmir)
+This is free software, and you are welcome to redistribute it under certain conditions;
+This program comes with ABSOLUTELY NO WARRANTY;
+`)
+
 const fs = require('fs')
 const wd = require('webdriverio')
 const cd = require('chromedriver')
@@ -23,86 +28,93 @@ const sm = require('sequencematcher')
 const MarkovText = require('./markov.js')
 
 class Crispy {
-  constructor(kwargs={}) {
-    // Init
-    let self = this
-    this.logged_in = false
-    this.start_time = this.current_time()
-    this.last_wipe = this.start_time
-    this.last_save = this.start_time
-    this.cache = new Set()
-    this.commands = {}
-    this.command_help = {}
-    this.vocabularies = {}
-    this.vocabulary = null
-    this.last_message = null
-    this.browser = null
-    this.username = kwargs.username != null ? kwargs.username : null
-    this.password = kwargs.password != null ? kwargs.password : null
+  constructor(file) {
+    let fname = file.split('.')
+    if (fname.slice(-1) == 'json') {
+      // Init
+      this.config = fs.readFileSync(file, 'utf8')
+      this.logged_in = false
+      this.start_time = this.current_time()
+      this.last_wipe = this.start_time
+      this.last_save = this.start_time
+      this.cache = new Set()
+      this.commands = {}
+      this.command_help = {}
+      this.vocabularies = {}
+      this.vocabulary = null
+      this.last_message = null
+      this.browser = null
+      this.username = this.config.username != null ? this.config.username : process.env['CRISPY_USERNAME']
+      this.password = this.config.password != null ? this.config.password : process.env['CRISPY_PASSWORD']
 
-    // Config
-    this.config = kwargs
-    this.bot = kwargs.bot != null ? kwargs.bot : 'Crispybot'
-    this.room = kwargs.room != null ? kwargs.room : this.bot
-    this.url = kwargs.url != null ? kwargs.url : 'https://jumpin.chat/'+this.room
-    this.login_url = kwargs.login_url != null ? kwargs.login_url : 'https://jumpin.chat/login'
-    this.max_tries = kwargs.max_tries != null ? kwargs.max_tries : 100
-    this.max_len = kwargs.max_len != null ? kwargs.max_len : 60
-    this.min_len = kwargs.min_len != null ? kwargs.min_len : 10
-    this.refresh_interval = kwargs.refresh_interval != null ? kwargs.refresh_interval : 10
-    this.sleep_interval = kwargs.sleep_interval != null ? kwargs.sleep_interval : 0.1
-    this.wipe_interval = kwargs.wipe_interval != null ? kwargs.wipe_interval : 10
-    this.save_interval = kwargs.save_interval != null ? kwargs.save_interval : 10
-    this.case_sensitive = kwargs.case_sensitive != null ? kwargs.case_sensitive : true
-    this.similarity_score = kwargs.similarity_score != null ? kwargs.similarity_score : 0.5
-    this.filter = kwargs.filter != null ? new Set(kwargs.filter) : new Set()
-    this.targets = kwargs.targets != null ? new Set(kwargs.targets) : new Set()
-    this.triggers = kwargs.triggers != null ? new Set(kwargs.triggers) : new Set()
-    this.closed_users = kwargs.closed_users != null ? new Set(kwargs.closed_users) : new Set()
-    this.banned_users = kwargs.banned_users != null ? new Set(kwargs.banned_users) : new Set()
-    this.banned_words = kwargs.banned_words != null ? new Set(kwargs.banned_words) : new Set()
-    this.cleared_words = kwargs.cleared_words != null ? new Set(kwargs.cleared_words) : new Set()
-    this.cleared_users = kwargs.cleared_users != null ? new Set(kwargs.cleared_users) : new Set()
-    this.silenced_words = kwargs.silenced_words != null ? new Set(kwargs.silenced_words) : new Set()
-    this.silenced_users = kwargs.silenced_users != null ? new Set(kwargs.silenced_users) : new Set()
-    this.name_change = kwargs.name_change != null ? kwargs.name_change : 'changed their name to'
-    this.deny_message = kwargs.deny_message != null ? kwargs.deny_message : '/shrug'
-    this.ban_command = kwargs.ban_command != null ? kwargs.ban_command : '/ban'
-    this.ban_message = kwargs.ban_message != null ? kwargs.ban_message : '/shrug'
-    this.unban_command = kwargs.unban_command != null ? kwargs.unban_command : '/unban'
-    this.unban_message = kwargs.unban_message != null ? kwargs.unban_message : '/shrug'
-    this.close_command = kwargs.close_command != null ? kwargs.close_command : '/close'
-    this.close_message = kwargs.close_message != null ? kwargs.close_message : '/shrug'
-    this.clear_command = kwargs.clear_command != null ? kwargs.clear_command : '/clear'
-    this.clear_message = kwargs.clear_message != null ? kwargs.clear_message : '/shrug'
-    this.silence_command = kwargs.silence_command != null ? kwargs.silence_command : '/silence'
-    this.silence_message = kwargs.silence_message != null ? kwargs.silence_message : '/shrug'
-    this.msg_command = kwargs.msg_command != null ? kwargs.msg_command : '/msg'
-    this.msg_message = kwargs.msg_message != null ? kwargs.msg_message : '/shrug'
-    this.action_command = kwargs.action_command != null ? kwargs.action_command : '/me'
-    this.action_message = kwargs.action_message != null ? kwargs.action_message : '/shrug'
-    this.nick_command = kwargs.nick_command != null ? kwargs.nick_command : '/nick'
-    this.nick_message = kwargs.nick_message != null ? kwargs.nick_message : '/shrug'
-    this.color_command = kwargs.color_command != null ? kwargs.color_command : '/color'
-    this.color_message = kwargs.color_message != null ? kwargs.color_message : '/shrug'
-    this.clear_banned = kwargs.clear_banned != null ? kwargs.clear_banned : false
-    this.trigger_sensitivity = kwargs.trigger_sensitivity != null ? kwargs.trigger_sensitivity : 0.0
-    this.target_sensitivity = kwargs.target_sensitivity != null ? kwargs.target_sensitivity : 0.5
-    this.admins = kwargs.admins != null ? new Set(kwargs.admins) : new Set()
-    this.prefix = kwargs.prefix != null ? kwargs.prefix : '!'
-    this.debug = kwargs.debug != null ? kwargs.debug : false
+      // Config
+      this.config_file = file
+      this.bot = this.config.bot != null ? this.config.bot : 'Crispybot'
+      this.room = this.config.room != null ? this.config.room : this.bot
+      this.url = this.config.url != null ? this.config.url : 'https://jumpin.chat/'+this.room
+      this.login_url = this.config.login_url != null ? this.config.login_url : 'https://jumpin.chat/login'
+      this.max_tries = this.config.max_tries != null ? this.config.max_tries : 100
+      this.max_len = this.config.max_len != null ? this.config.max_len : 60
+      this.min_len = this.config.min_len != null ? this.config.min_len : 10
+      this.refresh_interval = this.config.refresh_interval != null ? this.config.refresh_interval : 10
+      this.sleep_interval = this.config.sleep_interval != null ? this.config.sleep_interval : 0.1
+      this.wipe_interval = this.config.wipe_interval != null ? this.config.wipe_interval : 10
+      this.save_interval = this.config.save_interval != null ? this.config.save_interval : 10
+      this.case_sensitive = this.config.case_sensitive != null ? this.config.case_sensitive : true
+      this.similarity_score = this.config.similarity_score != null ? this.config.similarity_score : 0.5
+      this.filter = this.config.filter != null ? new Set(this.config.filter) : new Set()
+      this.targets = this.config.targets != null ? new Set(this.config.targets) : new Set()
+      this.triggers = this.config.triggers != null ? new Set(this.config.triggers) : new Set()
+      this.closed_users = this.config.closed_users != null ? new Set(this.config.closed_users) : new Set()
+      this.banned_users = this.config.banned_users != null ? new Set(this.config.banned_users) : new Set()
+      this.banned_words = this.config.banned_words != null ? new Set(this.config.banned_words) : new Set()
+      this.cleared_words = this.config.cleared_words != null ? new Set(this.config.cleared_words) : new Set()
+      this.cleared_users = this.config.cleared_users != null ? new Set(this.config.cleared_users) : new Set()
+      this.silenced_words = this.config.silenced_words != null ? new Set(this.config.silenced_words) : new Set()
+      this.silenced_users = this.config.silenced_users != null ? new Set(this.config.silenced_users) : new Set()
+      this.name_change = this.config.name_change != null ? this.config.name_change : 'changed their name to'
+      this.deny_message = this.config.deny_message != null ? this.config.deny_message : '/shrug'
+      this.ban_command = this.config.ban_command != null ? this.config.ban_command : '/ban'
+      this.ban_message = this.config.ban_message != null ? this.config.ban_message : '/shrug'
+      this.unban_command = this.config.unban_command != null ? this.config.unban_command : '/unban'
+      this.unban_message = this.config.unban_message != null ? this.config.unban_message : '/shrug'
+      this.close_command = this.config.close_command != null ? this.config.close_command : '/close'
+      this.close_message = this.config.close_message != null ? this.config.close_message : '/shrug'
+      this.clear_command = this.config.clear_command != null ? this.config.clear_command : '/clear'
+      this.clear_message = this.config.clear_message != null ? this.config.clear_message : '/shrug'
+      this.silence_command = this.config.silence_command != null ? this.config.silence_command : '/silence'
+      this.silence_message = this.config.silence_message != null ? this.config.silence_message : '/shrug'
+      this.msg_command = this.config.msg_command != null ? this.config.msg_command : '/msg'
+      this.msg_message = this.config.msg_message != null ? this.config.msg_message : '/shrug'
+      this.action_command = this.config.action_command != null ? this.config.action_command : '/me'
+      this.action_message = this.config.action_message != null ? this.config.action_message : '/shrug'
+      this.nick_command = this.config.nick_command != null ? this.config.nick_command : '/nick'
+      this.nick_message = this.config.nick_message != null ? this.config.nick_message : '/shrug'
+      this.color_command = this.config.color_command != null ? this.config.color_command : '/color'
+      this.color_message = this.config.color_message != null ? this.config.color_message : '/shrug'
+      this.clear_banned = this.config.clear_banned != null ? this.config.clear_banned : false
+      this.trigger_sensitivity = this.config.trigger_sensitivity != null ? this.config.trigger_sensitivity : 0.0
+      this.target_sensitivity = this.config.target_sensitivity != null ? this.config.target_sensitivity : 0.5
+      this.admins = this.config.admins != null ? new Set(this.config.admins) : new Set()
+      this.prefix = this.config.prefix != null ? this.config.prefix : '!'
+      this.debug = this.config.debug != null ? this.config.debug : false
 
-    // Webdriver
-    cd.start()
+      // Webdriver
+      cd.start()
 
-    // Exit
-    let exit = () => {self.exit = true}
-    process.on('SIGHUP', exit)
-    process.on('SIGQUIT', exit)
-    process.on('SIGTERM', exit)
-    process.on('SIGINT', exit)
-    if (process.platform === 'win32') {
-      process.on('SIGKILL', exit)
+      // Exit
+      let self = this
+      let exit = () => {self.exit = true}
+      process.on('SIGHUP', exit)
+      process.on('SIGQUIT', exit)
+      process.on('SIGTERM', exit)
+      process.on('SIGINT', exit)
+      if (process.platform === 'win32') {
+        process.on('SIGKILL', exit)
+      }
+    } else {
+      console.log(`\The config ${this.config_file} is invalid!\n`)
+      process.exit()
     }
   }
 
@@ -147,7 +159,7 @@ class Crispy {
         this.config[key] = conf[key]
       }
     }
-    fs.writeFile('config.json', JSON.stringify(this.config, null, 2), 'utf8', (err) => {if (this.debug) console.log(err)});
+    fs.writeFile(this.config_file, JSON.stringify(this.config, null, 2), 'utf8', (err) => {if (this.debug) console.log(err)});
   }
 
   sleep(ratio=1) {
@@ -188,7 +200,7 @@ class Crispy {
     if (!message) return false
     for (let t of this.triggers) {
       for (let m of message.split(/\s+/)) {
-        if (sm.sequenceMatcher(t.toLowerCase(), m.toLowerCase()) > Math.min(Math.max(1-this.trigger_sensitivity,0),1)) {
+        if (sm.sequenceMatcher(t.toLowerCase().split(), m.toLowerCase().split()) > Math.min(Math.max(1-this.trigger_sensitivity,0),1)) {
           return true
         }
       }
@@ -262,9 +274,9 @@ class Crispy {
     if (!this.is_bot(username)) {
       let profile = await this.get_user_profile(username)
       for (let t of this.targets) {
-        if (sm.sequenceMatcher(t.toLowerCase(), username.toLowerCase()) > Math.min(Math.max(1-this.target_sensitivity,0),1))
+        if (sm.sequenceMatcher(t.toLowerCase().split(), username.toLowerCase().split()) > Math.min(Math.max(1-this.target_sensitivity,0),1))
           return true
-        else (sm.sequenceMatcher(t.toLowerCase(), profile.toLowerCase()) > Math.min(Math.max(1-this.target_sensitivity, 0), 1))
+        else (sm.sequenceMatcher(t.toLowerCase().split(), profile.toLowerCase().split()) > Math.min(Math.max(1-this.target_sensitivity, 0), 1))
           return true
       }
     }
@@ -428,12 +440,12 @@ class Crispy {
           let gear = await this.browser.$('.fa-gear')
           await gear.click()
           let youtube = await this.browser.$('#enableyoutubevideos')
-          if (youtube.isSelected()) {
+          if (await youtube.isSelected()) {
             await youtube.click()
             await gear.click()
           }
           let darkmode = await this.browser.$('#enabledarktheme')
-          if (!darkmode.isSelected()) {
+          if (!await darkmode.isSelected()) {
             await darkmode.click()
           }
           let volume = await this.browser.$('.chat__HeaderOption-streamVolume')
@@ -517,7 +529,6 @@ class Crispy {
 
   async ban(username, notify=true) {
     if (username) {
-      console.log('BANABNABNABNABNABNABNABNBANBANBANBANBANBA')
       await this.send_message(`${this.ban_command} ${username}`)
       if (notify) {
         await this.send_message(this.ban_message)
@@ -875,7 +886,6 @@ class Crispy {
   async check_for_command(username, message, id) {
     if (this.is_command(message)) {
       if (await this.is_admin(username)) {
-        console.log(message)
         if (this.last_message != id) await this.try_command(username, message)
       } else {
         await this.send_message(this.deny_message)
@@ -929,7 +939,6 @@ class Crispy {
   }
 
   shutdown() {
-    console.log('\nSaving and shutting down!\n')
     this.save({ force: true, sync: true })
     this.browser.closeWindow()
     cd.stop()

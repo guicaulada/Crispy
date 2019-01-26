@@ -21,7 +21,7 @@ const sm = require('sequencematcher');
 const pos = require('pos')
 
 class MarkovText extends mv.markovText {
-  constructor(kwargs) {
+  constructor(kwargs={}) {
     super()
     let json = kwargs.json
     let user_model = {}
@@ -32,6 +32,7 @@ class MarkovText extends mv.markovText {
       json_data = JSON.parse(kwargs.json)
       kwargs.json = false
       for (let user in json_data) {
+        if (json_data[user].constructor !== Array) json_data[user] = Array.from(json_data[user])
         kwargs.corpus = json_data[user]
         user_model[user] = new MarkovText(kwargs)
         user_model[user].username = user
@@ -46,8 +47,8 @@ class MarkovText extends mv.markovText {
     this.mixed_model = mixed_model
     this.json_data = json_data
     this.json = json
-    this.corpus = kwargs.corpus
-    if (kwargs.corpus.length > 25) {
+    this.corpus = kwargs.corpus != null ? kwargs.corpus : []
+    if (this.corpus.length > 25) {
       this.init(kwargs)
       this.ready = true
     }

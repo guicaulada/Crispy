@@ -18,21 +18,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 (async () => {
 
-console.log(`
-Crispy - An annoying bot.  Copyright (C) 2018  Guilherme Caulada (Sighmir)
-This is free software, and you are welcome to redistribute it under certain conditions;
-This program comes with ABSOLUTELY NO WARRANTY;
-`)
-
 let Crispy = require('..')
 
 const fs = require('fs')
-let config = fs.readFileSync('./example/config.json', 'utf8')
 
-let crispy = await new Crispy(JSON.parse(config))
-
-crispy.username = config.username || process.env['CRISPY_USERNAME']
-crispy.password = config.password || process.env['CRISPY_PASSWORD']
+let crispy = await new Crispy('./example/config.json')
 
 console.log()
 crispy.add_vocabulary('sherlock', {file: './example/models/sherlock.txt', state_size: 3})

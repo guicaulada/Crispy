@@ -24,5 +24,6 @@
   "targets": [],
   "trigger_sensitivity": 0.25,
   "triggers": [],
-  "wipe_interval": 60
+  "wipe_interval": 60,
+  "config_path": "./example/config.json"
 }
