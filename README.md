@@ -17,31 +17,30 @@ to make a bot to keep up with him.
 - **Dec 6~12, 2018**: Added bot account that can be modded and profile validation for admin commands.
 - **Dec 13~16, 2018**: Fixed login issues and other errors and improves ban function.
 - **Dec 21~22, 2018**: Prepared for public release, removed personal files, made improvements and lots of refactoring.
+- **Jan 24~26, 2019**: Released it for NodeJS to make the training asynchronous, and other improvements.
 
 ## Requirements
-This project uses [Selenium](https://github.com/SeleniumHQ/selenium),
-[Markovify](https://github.com/jsvine/markovify) and [NLTK](https://github.com/nltk/nltk),
-those can be installed with `pip` following the installation instructions.
-Selenium is using [Chromedriver](https://sites.google.com/a/chromium.org/chromedriver/downloads),
-so you will need to install that on your machine aswell.
-This project was made using **Python 3.6**, it was **not tested** for any other versions.
+This project uses [chromedriver](https://www.npmjs.com/package/chromedriver),
+[node-markovify](https://www.npmjs.com/package/node-markovify), [pos](https://www.npmjs.com/package/pos),
+[sequencematcher](https://www.npmjs.com/package/sequencematcher) and [webdriverio](https://www.npmjs.com/package/sequencematcher)
+those can be installed with `npm install` following the installation instructions.  
+This project was made using **NodeJS v10.3.0**, it was **not tested** for any other versions.
 
 ## Installation
-- Clone this repository with `git clone git@github.com:Sighmir/Crispy.git`
-- Go to the repository folder with `cd Crispy`
-- Install needed libraries with `pip install -r requirments`
-- Execute the project with `python main.py`
+- If you wish to run the example:
+  - Clone this repository with `git clone git@github.com:Sighmir/Crispy.git`
+  - Go to the repository folder with `cd Crispy`
+  - Install needed libraries with `npm install`
+  - Execute the example with `npm start`
+
+- If you wish to make your own:
+  - Just run `npm install crispy` in your project folder
 
 ## Vocabulary
 Vocabulary files should be located inside the folder *models*.
-#### Types
-- **text**: Default text model from normal text files like books and movie scripts.
-- **line**: File with each phrase on a new line, can be used for training based on chat messages.
-- **json**: File storing each message by source, can be used for training based on chat messages.
 
 #### Parameters
 - **file**: Vocabulary file.
-- **type**: Vocabulary type.
 - **state_size**: Markovian state size.
 - **training**: If True bot will add chat messages to it's vocabulary (can only be used for type *line* and *json*).
 
