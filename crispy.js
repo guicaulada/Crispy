@@ -67,6 +67,8 @@ class Crispy {
       this.closed_users = this.config.closed_users != null ? new Set(this.config.closed_users) : new Set()
       this.banned_users = this.config.banned_users != null ? new Set(this.config.banned_users) : new Set()
       this.banned_words = this.config.banned_words != null ? new Set(this.config.banned_words) : new Set()
+      this.kicked_users = this.config.kicked_users != null ? new Set(this.config.kicked_users) : new Set()
+      this.kicked_words = this.config.kicked_words != null ? new Set(this.config.kicked_words) : new Set()
       this.cleared_words = this.config.cleared_words != null ? new Set(this.config.cleared_words) : new Set()
       this.cleared_users = this.config.cleared_users != null ? new Set(this.config.cleared_users) : new Set()
       this.silenced_words = this.config.silenced_words != null ? new Set(this.config.silenced_words) : new Set()
@@ -75,6 +77,8 @@ class Crispy {
       this.deny_message = this.config.deny_message != null ? this.config.deny_message : '/shrug'
       this.ban_command = this.config.ban_command != null ? this.config.ban_command : '/ban'
       this.ban_message = this.config.ban_message != null ? this.config.ban_message : '/shrug'
+      this.kick_command = this.config.kick_command != null ? this.config.kick_command : '/kick'
+      this.kick_message = this.config.kick_message != null ? this.config.kick_message : '/shrug'
       this.unban_command = this.config.unban_command != null ? this.config.unban_command : '/unban'
       this.unban_message = this.config.unban_message != null ? this.config.unban_message : '/shrug'
       this.close_command = this.config.close_command != null ? this.config.close_command : '/close'
@@ -92,6 +96,7 @@ class Crispy {
       this.color_command = this.config.color_command != null ? this.config.color_command : '/color'
       this.color_message = this.config.color_message != null ? this.config.color_message : '/shrug'
       this.clear_banned = this.config.clear_banned != null ? this.config.clear_banned : false
+      this.clear_kicked = this.config.clear_kicked != null ? this.config.clear_kicked : false
       this.trigger_sensitivity = this.config.trigger_sensitivity != null ? this.config.trigger_sensitivity : 0.0
       this.target_sensitivity = this.config.target_sensitivity != null ? this.config.target_sensitivity : 0.5
       this.admins = this.config.admins != null ? new Set(this.config.admins) : new Set()
@@ -172,8 +177,9 @@ class Crispy {
   }
 
   async filter_message(username, message) {
-    let filter_set = new Set([...this.filter, ...this.banned_users, ...this.banned_words, ...this.silenced_users,
-    ...this.silenced_words, ...this.cleared_users, ...this.cleared_words, this.bot, this.name_change])
+    let filter_set = new Set([...this.filter, ...this.banned_users, ...this.banned_words,
+    ...this.kicked_users,  ...this.kicked_words, ...this.silenced_users, ...this.silenced_words,
+    ...this.cleared_users, ...this.cleared_words, this.bot, this.name_change])
     let profile = await this.get_user_profile(username)
     for (let f of filter_set) {
       if (message.toLowerCase().includes(f.toLowerCase())  || f.toLowerCase() == username.toLowerCase() || f.toLowerCase() == profile.toLowerCase()) return false
@@ -213,6 +219,18 @@ class Crispy {
     let profile = await this.get_user_profile(username)
     if (this.banned_users.has(username.toLowerCase()) || this.banned_users.has(profile.toLowerCase())) return 1
     for (let t of this.banned_words) {
+      if (message.toLowerCase().includes(t.toLowerCase())) {
+        return 2
+      }
+    }
+    return 0
+  }
+
+  async is_kicked(username, message) {
+    if (!message || !username) return 0
+    let profile = await this.get_user_profile(username)
+    if (this.kicked_users.has(username.toLowerCase()) || this.kicked_users.has(profile.toLowerCase())) return 1
+    for (let t of this.kicked_words) {
       if (message.toLowerCase().includes(t.toLowerCase())) {
         return 2
       }
@@ -539,6 +557,15 @@ class Crispy {
     }
   }
 
+  async kick(username, notify=true) {
+    if (username) {
+      await this.send_message(`${this.kick_command} ${username}`)
+      if (notify) {
+        await this.send_message(this.kick_message)
+      }
+    }
+  }
+
   async unban(username, notify=true) {
     if (username) {
       await this.send_message(`${this.unban_command} ${username}`)
@@ -736,6 +763,18 @@ class Crispy {
     return false
   }
 
+  async check_for_kicked(username, message) {
+    let kicked = await this.is_kicked(username, message)
+    if (kicked) {
+      await this.kick(username)
+      if (kicked == 2 && this.clear_kicked) {
+        await this.clear()
+      }
+      return true
+    }
+    return false
+  }
+
   async check_for_cleared(username, message) {
     let cleared = await this.is_cleared(username, message)
     if (cleared) {
@@ -805,6 +844,30 @@ class Crispy {
       this.banned_words.delete(b)
     }
     this.update_config({banned_words: this.banned_words, banned_users: this.banned_users})
+  }
+
+  async add_kicked(kwargs = {}) {
+    if (!kwargs.users) kwargs.users = []
+    if (!kwargs.words) kwargs.words = []
+    for (let b of kwargs.users) {
+      this.kicked_users.add(b)
+    }
+    for (let b of kwargs.words) {
+      this.kicked_words.add(b)
+    }
+    this.update_config({ kicked_words: this.kicked_words, kicked_users: this.kicked_users })
+  }
+
+  async del_kicked(kwargs = {}) {
+    if (!kwargs.users) kwargs.users = []
+    if (!kwargs.words) kwargs.words = []
+    for (let b of kwargs.users) {
+      this.kicked_users.delete(b)
+    }
+    for (let b of kwargs.words) {
+      this.kicked_words.delete(b)
+    }
+    this.update_config({ kicked_words: this.kicked_words, kicked_users: this.kicked_users })
   }
 
   add_cleared(kwargs={}) {
@@ -925,6 +988,7 @@ class Crispy {
               } else if (this.has_user_account() && this.last_message != id) {
                 username = this.check_name_change(username, message)
                 if (!this.is_bot(username)) {
+                  await this.check_for_kicked(username, message)
                   await this.check_for_banned(username, message)
                   await this.check_for_cleared(username, message)
                   await this.check_for_silenced(username, message)

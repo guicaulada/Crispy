@@ -52,6 +52,8 @@ Default prefix for commands is *!*. More commands can be created with custom fun
   - **ban** *&lt;users>*: Make the bot ban every user named exctly like *&lt;targets>*.
   - **ban** *&lt;words>*: Make the bot ban every user, by message or username, containing *&lt;targets>*.
 - **unban** *&lt;users|words>* *&lt;targets>*: Remove users or words from the banned list.
+- **kick** *&lt;users|words>* *&lt;targets>*: Add users or words to the kicked list.
+- **unkick** *&lt;users|words>* *&lt;targets>*: Remove users or words from the kicned list.
 - **clear** *&lt;users|words>* *&lt;targets>*: Add users or words to the cleared list.
 - **unclear** *&lt;users|words>* *&lt;targets>*: Remove users or words from the cleared list.
 - **silence** *&lt;users|words>* *&lt;targets>*: Add users or words to the silenced list.
@@ -76,6 +78,7 @@ Default prefix for commands is *!*. More commands can be created with custom fun
 - **color**: Changes the bot chat color.
 - **closed**: Private messages the closed users list.
 - **banned** *&lt;users|words>*: Private messages the banned users/words list.
+- **kicked** *&lt;users|words>*: Private messages the kicked users/words list.
 - **cleared** *&lt;users|words>*: Private messages the cleared users/words list.
 - **silenced** *&lt;users|words>*: Private messages the silenced users/words list.
 - **targets**: Private messages the target users list.
@@ -104,6 +107,8 @@ The configuration variables can be set in config.json. The default file has the 
 - **closed_users**: List of usernames that should be closed automatically after camming up. *(Default: [])*
 - **banned_users**: List of usernames that should be banned automatically when joining the room. *(Default: [])*
 - **banned_words**: List of banned words, the bot will ban every user, by message or username with those words. *(Default: [])*
+- **kicked_users**: List of usernames that should be kicked automatically when joining the room. *(Default: [])*
+- **kicked_words**: List of kicked words, the bot will ban every user, by message or username with those words. *(Default: [])*
 - **cleared_users**: List of usernames that should be cleared automatically after sending a message. *(Default: [])*
 - **cleared_words**: List of words that should be cleared automatically after appearing in a message. *(Default: [])*
 - **silenced_users**: List of usernames that should be silenced automatically after sending a message. *(Default: [])*
@@ -114,6 +119,8 @@ The configuration variables can be set in config.json. The default file has the 
 - **deny_message**: Message sent by the bot when denying a command. *(Default: /shrug)*
 - **ban_command**: Ban command used on the website. *(Default: /ban)*
 - **ban_message**: Message sent after banning an user. *(Default: /shrug)*
+- **kick_command**: Kick command used on the website. *(Default: /kick)*
+- **kick_message**: Message sent after kicking an user. *(Default: /shrug)*
 - **unban_command**: Unban command used on the website. *(Default: /unban)*
 - **unban_message**: Message sent after unbanning someone. *(Default: /shrug)*
 - **close_command**: Close command used on the website. *(Default: /close)*
@@ -131,6 +138,7 @@ The configuration variables can be set in config.json. The default file has the 
 - **color_command**: Color command used on the website. *(Default: /color)*
 - **color_message**: Message sent after changing color. *(Default: /shrug)*
 - **clear_banned**: Clear chat after ban by word. *(Default: False)*
+- **clear_kicked**: Clear chat after kick by word. *(Default: False)*
 - **trigger_sensitivity**: Sensitivity of the trigger words detection. *(Default: 0.0)*
 - **target_sensitivity**: Sensitivity of the target dectection. *(Default: 0.5)*
 - **admins**: List of bot admin accounts that have access to commands. *(Default: [])*

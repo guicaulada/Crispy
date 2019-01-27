@@ -63,6 +63,44 @@ module.exports = {
     }
   },
 
+  kick_command: async (kwargs) => {
+    let crispy = kwargs.crispy
+    if (crispy) {
+      let args = kwargs.args
+      if (args) {
+        if (args[0] == 'word' || args[0] == 'words') {
+          await crispy.add_kicked({ words: args.slice(1) })
+          await crispy.send_message(`Word(s) ${args.slice(1).join(', ')} have been added to the kick list!`)
+        } else if (args[0] == 'user' || args[0] == 'user') {
+          await crispy.add_kicked({ users: args.slice(1) })
+          await crispy.send_message(`User(s) ${args.slice(1).join(', ')} have been added to the kick list!`)
+        } else {
+          await crispy.send_message('Please specify "word" or "user" as the second argument!')
+          await crispy.send_message('For example: !kick user crispy')
+        }
+      }
+    }
+  },
+
+  unkick_command: async (kwargs) => {
+    let crispy = kwargs.crispy
+    if (crispy) {
+      let args = kwargs.args
+      if (args) {
+        if (args[0] == 'word' || args[0] == 'words') {
+          await crispy.del_kicked({ words: args.slice(1) })
+          await crispy.send_message(`Word(s) ${args.slice(1).join(', ')} have been removed from the kick list!`)
+        } else if (args[0] == 'user' || args[0] == 'user') {
+          await crispy.del_kicked({ users: args.slice(1) })
+          await crispy.send_message(`User(s) ${args.slice(1).join(', ')} have been removed from the kick list!`)
+        } else {
+          await crispy.send_message('Please specify "word" or "user" as the second argument!')
+          await crispy.send_message('For example: !unkick user crispy')
+        }
+      }
+    }
+  },
+
   clear_command: async (kwargs) => {
     let crispy = kwargs.crispy
     if (crispy) {
@@ -437,6 +475,38 @@ module.exports = {
         if (lst) {
           for (let el of lst) {
             if ((text+el).length < 200) {
+              text = `${text} ${el}`
+            } else {
+              await crispy.msg(username, text, false)
+              text = el
+            }
+          }
+          await crispy.msg(username, text)
+        } else {
+          await crispy.send_message(crispy.deny_message)
+        }
+      } else {
+        await crispy.send_message(crispy.deny_message)
+      }
+    }
+  },
+
+  kicked_command: async (kwargs) => {
+    let crispy = kwargs.crispy
+    let username = kwargs.username
+    if (crispy) {
+      let args = kwargs.args
+      if (args) {
+        let lst = null
+        let text = `Kicked ${args[0]}:`
+        if (args[0] == 'words') {
+          lst = crispy.kicked_words
+        } else if (args[0] == 'users') {
+          lst = crispy.kicked_users
+        }
+        if (lst) {
+          for (let el of lst) {
+            if ((text + el).length < 200) {
               text = `${text} ${el}`
             } else {
               await crispy.msg(username, text, false)
