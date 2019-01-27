@@ -502,7 +502,7 @@ class Crispy {
       await chat.click()
     } catch {
       console.log('\nTried to click .chat__Input but element not found. Refreshing page...')
-      await this.refresh()
+      await this.force_refresh()
     }
   }
 
@@ -874,7 +874,7 @@ class Crispy {
   async check_for_routines() {
     this.wipe_cache()
     this.save()
-    this.refresh()
+    await this.refresh()
   }
 
   check_name_change(username, message) {
