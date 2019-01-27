@@ -222,7 +222,7 @@ class MarkovText extends mv.markovText {
       }
       return matched_times / max_length
     }
-    if (arr1.length >= arr2.length) {
+    if (arr1.length <= arr2.length) {
       return score(arr1, arr2)
     } else {
       return score(arr2, arr1)
