@@ -1,6 +1,6 @@
 {
   "name": "crispybot",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "An annoying bot.",
   "main": "index.js",
   "directories": {
@@ -23,7 +23,6 @@
     "chromedriver": "^2.45.0",
     "node-markovify": "^1.0.3",
     "pos": "^0.4.2",
-    "sequencematcher": "^1.0.11",
     "webdriverio": "^5.4.7"
   }
 }

@@ -24,7 +24,6 @@ This program comes with ABSOLUTELY NO WARRANTY;
 const fs = require('fs')
 const wd = require('webdriverio')
 const cd = require('chromedriver')
-const sm = require('sequencematcher')
 const MarkovText = require('./markov.js')
 
 class Crispy {
@@ -200,7 +199,7 @@ class Crispy {
     if (!message) return false
     for (let t of this.triggers) {
       for (let m of message.split(/\s+/)) {
-        if (sm.sequenceMatcher(t.toLowerCase().split(), m.toLowerCase().split()) > Math.min(Math.max(1-this.trigger_sensitivity,0),1)) {
+        if (MarkovText.sequenceMatcher(t.toLowerCase(), m.toLowerCase()) > Math.min(Math.max(1-this.trigger_sensitivity,0),1)) {
           return true
         }
       }
@@ -274,9 +273,9 @@ class Crispy {
     if (!this.is_bot(username)) {
       let profile = await this.get_user_profile(username)
       for (let t of this.targets) {
-        if (sm.sequenceMatcher(t.toLowerCase().split(), username.toLowerCase().split()) > Math.min(Math.max(1-this.target_sensitivity,0),1))
+        if (MarkovText.sequenceMatcher(t.toLowerCase(), username.toLowerCase()) > Math.min(Math.max(1-this.target_sensitivity,0),1))
           return true
-        else (sm.sequenceMatcher(t.toLowerCase().split(), profile.toLowerCase().split()) > Math.min(Math.max(1-this.target_sensitivity, 0), 1))
+        else (MarkovText.sequenceMatcher(t.toLowerCase(), profile.toLowerCase()) > Math.min(Math.max(1-this.target_sensitivity, 0), 1))
           return true
       }
     }

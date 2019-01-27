@@ -17,7 +17,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 const mv = require('node-markovify')
-const sm = require('sequencematcher');
 const pos = require('pos')
 
 class MarkovText extends mv.markovText {
@@ -56,15 +55,24 @@ class MarkovText extends mv.markovText {
 
   make_sentence_from(message, max_chars, kwargs) {
     let tries = kwargs.tries != null ? kwargs.tries : 10
-    let case_sensitive = kwargs.case_sensitive != null ? kwargs['case_sensitive'] : true
+    let case_sensitive = kwargs.case_sensitive != null ? kwargs.case_sensitive : true
     let similarity = kwargs.similarity != null ? kwargs.similarity : 0.5
     let filter = kwargs.filter != null ? kwargs.filter : new Set()
     let words = new pos.Lexer().lex(message)
     let tags = new pos.Tagger().tag(words)
     let keywords = (() => {
       let k = []
-      if (case_sensitive) for (let t of tags) if (t[1][0] == 'N' || t[1][0] == 'R' || t[1][0] == 'V') k.push(t[0])
-      else for (let t of tags) if (t[1][0] == 'N' || t[1][0] == 'R' || t[1][0] == 'V') k.push(t[0].toLowerCase())
+      if (case_sensitive) {
+        for (let t of tags) {
+          if (t[1][0] == 'N' || t[1][0] == 'R' || t[1][0] == 'V') {
+            k.push(t[0])
+          }
+        }
+      } else {
+        for (let t of tags) if (t[1][0] == 'N' || t[1][0] == 'R' || t[1][0] == 'V') {
+          k.push(t[0].toLowerCase())
+        }
+      }
       return Array.from(new Set(k))
     })()
     let model = this
@@ -90,11 +98,22 @@ class MarkovText extends mv.markovText {
           var s_tags = new pos.Tagger().tag(s_words)
           let s_keywords = (() => {
             let k = []
-            if (case_sensitive) for (let t of s_tags) if (keywords.indexOf(t[0]) >= 0) k.push(t[0])
-            else for (let t of s_tags) if (keywords.indexOf(t[0]) >= 0) k.push(t[0].toLowerCase())
+            if (case_sensitive) {
+              for (let t of s_tags) {
+                if (keywords.indexOf(t[0]) >= 0) {
+                  k.push(t[0])
+                }
+              }
+            } else {
+              for (let t of s_tags) {
+                if (keywords.indexOf(t[0]) >= 0) {
+                  k.push(t[0].toLowerCase())
+                }
+              }
+            }
             return Array.from(new Set(k))
           })()
-          let score = sm.sequenceMatcher(keywords, s_keywords)
+          let score = MarkovText.sequenceMatcher(keywords, s_keywords)
           if (kwargs.debug) console.log(sentence, score)
           if (score > similarity) {
             return sentence
@@ -141,7 +160,7 @@ class MarkovText extends mv.markovText {
     }
   }
 
-   has_text(text, kwargs) {
+  has_text(text, kwargs) {
     if (this.json) {
       if (kwargs.username) {
         if (!this.json_data[kwargs.username]) {
@@ -187,6 +206,19 @@ class MarkovText extends mv.markovText {
   get_text() {
     if (this.json) return JSON.stringify(this.json_data, null, 2)
     else return this.corpus.join('\n')
+  }
+
+  static sequenceMatcher(arr1, arr2) {
+    let matched_times = 0
+    let total_length = arr1.length + arr2.length
+    for (let e1 of arr1) {
+      for (let e2 of arr2) {
+        if (e1 === e2) {
+          matched_times++
+        }
+      }
+    }
+    return matched_times / (total_length / 2)
   }
 }
 
