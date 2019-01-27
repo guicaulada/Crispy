@@ -421,9 +421,6 @@ class Crispy {
     this.last_refresh = this.current_time()
     await this.browser.url(this.url)
     let nickname = await this.browser.$('.form__Input-inline')
-    while (!nickname.error) {
-      nickname = await this.browser.$('.form__Input-inline')
-    }
     if (nickname) {
       await nickname.setValue(this.bot)
       let go = await this.browser.$('//button[text()="Go"]')
