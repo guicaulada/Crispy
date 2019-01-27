@@ -1,6 +1,6 @@
 {
   "name": "crispybot",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "An annoying bot.",
   "main": "index.js",
   "directories": {

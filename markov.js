@@ -209,17 +209,24 @@ class MarkovText extends mv.markovText {
   }
 
   static sequenceMatcher(arr1, arr2) {
-    let matched_times = 0
-    let max_length = Math.max(arr1.length, arr2.length)
-    for (let e1 of arr1) {
-      for (let e2 of arr2) {
-        if (e1 === e2) {
-          matched_times++
-          break
+    let score = (a1, a2) => {
+      let matched_times = 0
+      let max_length = Math.max(a1.length, a2.length)
+      for (let e1 of a1) {
+        for (let e2 of a2) {
+          if (e1 === e2) {
+            matched_times++
+            break
+          }
         }
       }
+      return matched_times / max_length
     }
-    return matched_times / max_length
+    if (arr1.length >= arr2.length) {
+      return score(arr1, arr2)
+    } else {
+      return score(arr2, arr1)
+    }
   }
 }
 
