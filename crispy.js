@@ -32,7 +32,7 @@ class Crispy {
     let fname = file.split('.')
     if (fname.slice(-1) == 'json') {
       // Init
-      this.config = fs.readFileSync(file, 'utf8')
+      this.config = JSON.parse(fs.readFileSync(file, 'utf8'))
       this.logged_in = false
       this.start_time = this.current_time()
       this.last_wipe = this.start_time
