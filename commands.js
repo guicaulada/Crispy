@@ -308,7 +308,7 @@ module.exports = {
         let old_value = crispy[args[0]]
         if (old_value != null) {
           if (args.length > 1) {
-            let new_value = ' '.join(args.slice(1))
+            let new_value = args.slice(1).join(' ')
             if (new_value.toLowerCase() == 'true') {
               new_value = true
             } else if (new_value.toLowerCase() == 'false') {
