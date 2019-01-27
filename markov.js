@@ -210,15 +210,16 @@ class MarkovText extends mv.markovText {
 
   static sequenceMatcher(arr1, arr2) {
     let matched_times = 0
-    let total_length = arr1.length + arr2.length
+    let max_length = Math.max(arr1.length, arr2.length)
     for (let e1 of arr1) {
       for (let e2 of arr2) {
         if (e1 === e2) {
           matched_times++
+          break
         }
       }
     }
-    return matched_times / (total_length / 2)
+    return matched_times / max_length
   }
 }
 
