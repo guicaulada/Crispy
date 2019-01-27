@@ -275,7 +275,7 @@ class Crispy {
       for (let t of this.targets) {
         if (MarkovText.sequenceMatcher(t.toLowerCase(), username.toLowerCase()) > Math.min(Math.max(1-this.target_sensitivity,0),1))
           return true
-        else (MarkovText.sequenceMatcher(t.toLowerCase(), profile.toLowerCase()) > Math.min(Math.max(1-this.target_sensitivity, 0), 1))
+        else if (MarkovText.sequenceMatcher(t.toLowerCase(), profile.toLowerCase()) > Math.min(Math.max(1-this.target_sensitivity, 0), 1))
           return true
       }
     }
