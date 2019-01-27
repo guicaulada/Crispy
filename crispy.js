@@ -125,6 +125,7 @@ class Crispy {
     if (this.browser != null) {
       this.browser = null
       cd.stop()
+      await this.sleep(5)
       cd.start()
     }
     let args = [
@@ -422,9 +423,15 @@ class Crispy {
     await this.browser.url(this.url)
     let nickname = await this.browser.$('.form__Input-inline')
     if (nickname) {
-      await nickname.setValue(this.bot)
-      let go = await this.browser.$('//button[text()="Go"]')
-      await go.click()
+      try {
+        await nickname.setValue(this.bot)
+        let go = await this.browser.$('//button[text()="Go"]')
+        await go.click()
+      } catch {
+        console.log('\nFailed to set nickname, input not found, restarting driver.\n')
+        await this.restart_driver()
+        return await this.login()
+      }
       try {
         let close = await this.browser.$('//span[text()="Close cams"]')
         await close.click()
@@ -450,7 +457,7 @@ class Crispy {
           await sounds.click()
         }
         this.logged_in = true
-        console.log('\nLogin complete! Bot is ready to receive messages!')
+        console.log('\nLogin complete! Bot is ready to receive messages!\n')
       } catch {
         console.log(`\nFailed to login! ${this.bot} already in use? Refreshing...`)
         await this.force_refresh()
