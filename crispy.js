@@ -130,7 +130,7 @@ class Crispy {
     if (this.browser != null) {
       this.browser = null
       cd.stop()
-      await this.sleep(5)
+      await this.sleep(15)
       cd.start()
     }
     let args = [
