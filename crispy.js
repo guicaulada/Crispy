@@ -128,6 +128,7 @@ class Crispy {
 
   async restart_driver() {
     if (this.browser != null) {
+      await this.browser.closeWindow()
       this.browser = null
       cd.stop()
       await this.sleep(15)
