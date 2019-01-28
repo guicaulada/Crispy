@@ -117,7 +117,7 @@ class Crispy {
         process.on('SIGKILL', exit)
       }
     } else {
-      console.log(`\The config ${this.config_file} is invalid!\n`)
+      console.log(`\nThe config ${this.config_file} is invalid!\n`)
       process.exit()
     }
   }
@@ -971,7 +971,7 @@ class Crispy {
         }
         while (this.logged_in) {
           if (this.exit) await this.shutdown()
-          this.check_for_routines()
+          await this.check_for_routines()
           await this.check_for_closed()
           let {username, message, id} = await this.capture_message()
           if (this.debug) console.log({username: username, message: message, id: id})
