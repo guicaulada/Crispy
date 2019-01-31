@@ -118,7 +118,7 @@ class Crispy {
         process.on('SIGKILL', exit)
       }
     } else {
-      console.log(`\The config ${this.config_file} is invalid!\n`)
+      console.log(`\nThe config ${this.config_file} is invalid!\n`)
       process.exit()
     }
   }
@@ -191,7 +191,8 @@ class Crispy {
 
   is_trained(name, message) {
     if (!message) return false
-    return this.vocabularies[name].has_text(message.text, {username: message.username})
+    let username = message.profile ? message.profile : message.username
+    return this.vocabularies[name].has_text(message.text, {username: username})
   }
 
   is_command(message) {
@@ -961,8 +962,8 @@ class Crispy {
           await this.login()
         }
         while (this.logged_in) {
-          if (this.exit) await this.shutdown()
-          this.check_for_routines()
+          if (this.exit) this.shutdown()
+          await this.check_for_routines()
           if (this.cam_check) await this.check_for_closed()
           let message = await this.capture_message()
           if (this.debug && this.last_message.id != message.id) console.log(message)
