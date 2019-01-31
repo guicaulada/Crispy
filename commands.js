@@ -307,7 +307,7 @@ module.exports = {
     if (crispy) {
       let args = kwargs.args
       if (args) {
-        await crispy.answer_to(kwargs.username, args.join(' '))
+        await crispy.answer_to(kwargs.message.username, args.join(' '))
       }
     }
   },
@@ -393,7 +393,7 @@ module.exports = {
 
   admins_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let username = kwargs.username
+    let username = kwargs.message.username
     let text = 'Admin users:'
     if (crispy) {
       for (let user of crispy.admins) {
@@ -410,7 +410,7 @@ module.exports = {
 
   targets_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let username = kwargs.username
+    let username = kwargs.message.username
     let text = 'Target users:'
     if (crispy) {
       for (let user of crispy.targets) {
@@ -427,7 +427,7 @@ module.exports = {
 
   triggers_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let username = kwargs.username
+    let username = kwargs.message.username
     let text = 'Trigger words:'
     if (crispy) {
       for (let word of crispy.triggers) {
@@ -444,7 +444,7 @@ module.exports = {
 
   closed_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let username = kwargs.username
+    let username = kwargs.message.username
     let text = 'Closed users:'
     if (crispy) {
       for (let user of crispy.closed_users) {
@@ -461,7 +461,7 @@ module.exports = {
 
   banned_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let username = kwargs.username
+    let username = kwargs.message.username
     if (crispy) {
       let args = kwargs.args
       if (args) {
@@ -493,7 +493,7 @@ module.exports = {
 
   kicked_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let username = kwargs.username
+    let username = kwargs.message.username
     if (crispy) {
       let args = kwargs.args
       if (args) {
@@ -525,7 +525,7 @@ module.exports = {
 
   cleared_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let username = kwargs.username
+    let username = kwargs.message.username
     if (crispy) {
       let args = kwargs.args
       if (args) {
@@ -557,7 +557,7 @@ module.exports = {
 
   silenced_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let username = kwargs.username
+    let username = kwargs.message.username
     if (crispy) {
       let args = kwargs.args
       if (args) {
@@ -589,7 +589,7 @@ module.exports = {
 
   help_command: async (kwargs) => {
     let crispy = kwargs.crispy
-    let username = kwargs.username
+    let username = kwargs.message.username
     if (crispy) {
       let args = kwargs.args
       if (args) {

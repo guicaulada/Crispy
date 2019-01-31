@@ -97,6 +97,7 @@ The configuration variables can be set in config.json. The default file has the 
 - **max_len**: Max length of generated phrases. *(Default: 60)*
 - **min_len**: Minimum length of generated phrases. *(Default: 10)*
 - **max_cache**: Maximum cache size for generated messages. To generate every message from chat use default. *(Default: 0)*
+- **cam_check**: Enables and disbles closed cams verification. *(Default: True)*
 - **refresh_interval**: Interval in minutes between each refresh. *(Default: 10)*
 - **sleep_interval**: Sleep interval used in most actions of the bot, change global speed. *(Default: 0.1)*
 - **wipe_interval**: Interval in minutes between each sent messages cache wipe. *(Default: 10)*

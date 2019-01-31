@@ -55,26 +55,10 @@ class MarkovText extends mv.markovText {
 
   make_sentence_from(message, max_chars, kwargs) {
     let tries = kwargs.tries != null ? kwargs.tries : 10
-    let case_sensitive = kwargs.case_sensitive != null ? kwargs.case_sensitive : true
     let similarity = kwargs.similarity != null ? kwargs.similarity : 0.5
+    let case_sensitive = kwargs.case_sensitive != null ? kwargs.case_sensitive : true
     let filter = kwargs.filter != null ? kwargs.filter : new Set()
-    let words = new pos.Lexer().lex(message)
-    let tags = new pos.Tagger().tag(words)
-    let keywords = (() => {
-      let k = []
-      if (case_sensitive) {
-        for (let t of tags) {
-          if (t[1][0] == 'N' || t[1][0] == 'R' || t[1][0] == 'V') {
-            k.push(t[0])
-          }
-        }
-      } else {
-        for (let t of tags) if (t[1][0] == 'N' || t[1][0] == 'R' || t[1][0] == 'V') {
-          k.push(t[0].toLowerCase())
-        }
-      }
-      return Array.from(new Set(k))
-    })()
+    let message_pos = MarkovText.get_important_pos(message, case_sensitive)
     let model = this
     if (model.json) {
       model = this.mixed_model
@@ -86,44 +70,25 @@ class MarkovText extends mv.markovText {
       }
     }
     if (model.ready) {
-      let sentences = new Set(model.predict({
+      let sentences = Array.from(new Set(model.predict({
         init_state: null,
         max_chars: max_chars,
         numberOfSentences: tries,
         popularFirstWord: false
-      }))
+      }))).filter(sentence => !filter.has(sentence))
       for (let sentence of sentences) {
-        if (!filter.has(sentence)) {
-          let s_words = new pos.Lexer().lex(sentence)
-          var s_tags = new pos.Tagger().tag(s_words)
-          let s_keywords = (() => {
-            let k = []
-            if (case_sensitive) {
-              for (let t of s_tags) {
-                if (keywords.indexOf(t[0]) >= 0) {
-                  k.push(t[0])
-                }
-              }
-            } else {
-              for (let t of s_tags) {
-                if (keywords.indexOf(t[0]) >= 0) {
-                  k.push(t[0].toLowerCase())
-                }
-              }
-            }
-            return Array.from(new Set(k))
-          })()
-          let score = MarkovText.sequenceMatcher(keywords, s_keywords)
-          if (kwargs.debug) console.log(sentence, score)
-          if (score > similarity) {
-            return sentence
-          }
+        let sentence_pos = MarkovText.get_important_pos(sentence, case_sensitive)
+        let score = MarkovText.sequence_matcher(message_pos, sentence_pos)
+        if (kwargs.debug) console.log(score, sentence)
+        if (kwargs.debug) console.log(message_pos, sentence_pos)
+        if (score > similarity) {
+          return sentence
         }
       }
-      if (model.username) {
-        kwargs.username = false
-        return this.make_sentence_from(message, max_chars, kwargs)
-      }
+    }
+    if (model.username) {
+      kwargs.username = false
+      return this.make_sentence_from(message, max_chars, kwargs)
     }
   }
 
@@ -208,19 +173,40 @@ class MarkovText extends mv.markovText {
     else return this.corpus.join('\n')
   }
 
-  static sequenceMatcher(arr1, arr2) {
+  static get_important_pos(message,case_sensitive) {
+    let k = []
+    let words = new pos.Lexer().lex(message)
+    let tags = new pos.Tagger().tag(words)
+    if (case_sensitive) {
+      for (let t of tags) {
+        if (t[1][0] == 'N' || t[1][0] == 'R' || t[1][0] == 'V' || t[1][0] == 'J') {
+          k.push(t[0])
+        }
+      }
+    } else {
+      for (let t of tags) if (t[1][0] == 'N' || t[1][0] == 'R' || t[1][0] == 'V' || t[1][0] == 'J') {
+        k.push(t[0].toLowerCase())
+      }
+    }
+    return Array.from(new Set(k)).sort()
+  }
+
+  static sequence_matcher(arr1, arr2) {
     let score = (a1, a2) => {
-      let matched_times = 0
+      let value = 0
       let max_length = Math.max(a1.length, a2.length)
-      for (let e1 of a1) {
-        for (let e2 of a2) {
-          if (e1 === e2) {
-            matched_times++
-            break
+      for (let i = 0; i < max_length; i++) {
+        if (a1[i] && a2[i]) {
+          if (a1[i].length > 1 && a2[i].length > 1) {
+            value += MarkovText.sequence_matcher(a1[i], a2[i])
+          } else {
+            if (a1[i] === a2[i]) {
+              value += 1
+            }
           }
         }
       }
-      return matched_times / max_length
+      return value / max_length
     }
     if (arr1.length <= arr2.length) {
       return score(arr1, arr2)

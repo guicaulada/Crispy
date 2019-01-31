@@ -40,8 +40,8 @@ class Crispy {
       this.commands = {}
       this.command_help = {}
       this.vocabularies = {}
+      this.last_message = {}
       this.vocabulary = null
-      this.last_message = null
       this.browser = null
       this.username = this.config.username != null ? this.config.username : process.env['CRISPY_USERNAME']
       this.password = this.config.password != null ? this.config.password : process.env['CRISPY_PASSWORD']
@@ -55,6 +55,7 @@ class Crispy {
       this.max_tries = this.config.max_tries != null ? this.config.max_tries : 100
       this.max_len = this.config.max_len != null ? this.config.max_len : 60
       this.min_len = this.config.min_len != null ? this.config.min_len : 10
+      this.cam_check = this.config.cam_check != null ? this.config.cam_check : true
       this.refresh_interval = this.config.refresh_interval != null ? this.config.refresh_interval : 10
       this.sleep_interval = this.config.sleep_interval != null ? this.config.sleep_interval : 0.1
       this.wipe_interval = this.config.wipe_interval != null ? this.config.wipe_interval : 10
@@ -172,26 +173,25 @@ class Crispy {
     return new Promise(resolve => setTimeout(resolve, this.sleep_interval * ratio * 1000))
   }
 
-  is_action(username, message) {
+  is_action(message) {
     if (!message) return false
-    return (!username && message[0] == '*')
+    return (!message.username && message.text[0] == '*')
   }
 
-  async filter_message(username, message) {
+  async filter_message(message) {
     let filter_set = new Set([...this.filter, ...this.banned_users, ...this.banned_words,
     ...this.kicked_users,  ...this.kicked_words, ...this.silenced_users, ...this.silenced_words,
     ...this.cleared_users, ...this.cleared_words, this.bot, this.name_change])
-    let profile = await this.get_user_profile(username)
     for (let f of filter_set) {
-      if (message.toLowerCase().includes(f.toLowerCase())  || f.toLowerCase() == username.toLowerCase() || f.toLowerCase() == profile.toLowerCase()) return false
+      if (message.text && message.text.toLowerCase().includes(f.toLowerCase()) || message.username && f.toLowerCase() == message.username.toLowerCase() || message.profile && f.toLowerCase() == message.profile.toLowerCase()) return false
     }
-    this.cache.add(message)
+    this.cache.add(message.text)
     return true
   }
 
-  is_trained(name,username,message) {
+  is_trained(name, message) {
     if (!message) return false
-    return this.vocabularies[name].has_text(message, {username: username})
+    return this.vocabularies[name].has_text(message.text, {username: message.username})
   }
 
   is_command(message) {
@@ -206,8 +206,8 @@ class Crispy {
   is_trigger(message) {
     if (!message) return false
     for (let t of this.triggers) {
-      for (let m of message.split(/\s+/)) {
-        if (MarkovText.sequenceMatcher(t.toLowerCase(), m.toLowerCase()) > Math.min(Math.max(1-this.trigger_sensitivity,0),1)) {
+      for (let m of message.text.split(/\s+/)) {
+        if (MarkovText.sequence_matcher(t.toLowerCase(), m.toLowerCase()) > Math.min(Math.max(1-this.trigger_sensitivity,0),1)) {
           return true
         }
       }
@@ -215,48 +215,44 @@ class Crispy {
     return false
   }
 
-  async is_banned(username, message) {
-    if (!message || !username) return 0
-    let profile = await this.get_user_profile(username)
-    if (this.banned_users.has(username.toLowerCase()) || this.banned_users.has(profile.toLowerCase())) return 1
+  async is_banned(message) {
+    if (!message || !message.username) return 0
+    if (this.banned_users.has(message.username.toLowerCase()) || message.profile && this.banned_users.has(message.profile.toLowerCase())) return 1
     for (let t of this.banned_words) {
-      if (message.toLowerCase().includes(t.toLowerCase())) {
+      if (message.text.toLowerCase().includes(t.toLowerCase())) {
         return 2
       }
     }
     return 0
   }
 
-  async is_kicked(username, message) {
-    if (!message || !username) return 0
-    let profile = await this.get_user_profile(username)
-    if (this.kicked_users.has(username.toLowerCase()) || this.kicked_users.has(profile.toLowerCase())) return 1
+  async is_kicked(message) {
+    if (!message || !message.username) return 0
+    if (this.kicked_users.has(message.username.toLowerCase()) || message.profile && this.kicked_users.has(message.profile.toLowerCase())) return 1
     for (let t of this.kicked_words) {
-      if (message.toLowerCase().includes(t.toLowerCase())) {
+      if (message.text.toLowerCase().includes(t.toLowerCase())) {
         return 2
       }
     }
     return 0
   }
 
-  async is_cleared(username, message) {
-    if (!message || !username) return 0
-    let profile = await this.get_user_profile(username)
-    if (this.cleared_users.has(username.toLowerCase()) || this.cleared_words.has(profile.toLowerCase())) return 1
+  async is_cleared(message) {
+    if (!message || !message.username) return 0
+    if (this.cleared_users.has(message.username.toLowerCase()) || message.profile && this.cleared_users.has(message.profile.toLowerCase())) return 1
     for (let t of this.cleared_words) {
-      if (message.toLowerCase().includes(t.toLowerCase())) {
+      if (message.text.toLowerCase().includes(t.toLowerCase())) {
         return 2
       }
     }
     return 0
   }
 
-  async is_silenced(username, message) {
-    if (!message || !username) return 0
-    let profile = await this.get_user_profile(username)
-    if (this.silenced_users.has(username.toLowerCase()) || this.silenced_users.has(profile.toLowerCase())) return 1
+  async is_silenced(message) {
+    if (!message || !message.username) return 0
+    if (this.silenced_users.has(message.username.toLowerCase()) || message.profile && this.silenced_users.has(message.profile.toLowerCase())) return 1
     for (let t of this.silenced_words) {
-      if (message.toLowerCase().includes(t.toLowerCase())) {
+      if (message.text.toLowerCase().includes(t.toLowerCase())) {
         return 2
       }
     }
@@ -275,10 +271,11 @@ class Crispy {
     }
   }
 
-  async try_command(username, message) {
+  async try_command(message) {
     for (let command in this.commands) {
-      if (message.split(/\s+/)[0].slice(1) == command) {
-        await this.commands[command]({crispy: this,args: message.split(/\s+/).slice(1),username: username})
+      if (message.text.split(/\s+/)[0].slice(1) == command) {
+        await this.commands[command]({crispy: this,args: message.text.split(/\s+/).slice(1),message: message})
+        break
       }
     }
   }
@@ -288,16 +285,13 @@ class Crispy {
     return username.toLowerCase() == this.bot.toLowerCase()
   }
 
-  async is_target(username) {
-    if (!username) return false
-    if (!this.is_bot(username)) {
-      let profile = await this.get_user_profile(username)
-      for (let t of this.targets) {
-        if (MarkovText.sequenceMatcher(t.toLowerCase(), username.toLowerCase()) > Math.min(Math.max(1-this.target_sensitivity,0),1))
-          return true
-        else if (MarkovText.sequenceMatcher(t.toLowerCase(), profile.toLowerCase()) > Math.min(Math.max(1-this.target_sensitivity, 0), 1))
-          return true
-      }
+  async is_target(message) {
+    if (!message.username) return false
+    for (let t of this.targets) {
+      if (MarkovText.sequence_matcher(t.toLowerCase(), message.username.toLowerCase()) > Math.min(Math.max(1-this.target_sensitivity,0),1))
+        return true
+      else if (message.profile && MarkovText.sequence_matcher(t.toLowerCase(), message.profile.toLowerCase()) > Math.min(Math.max(1-this.target_sensitivity, 0), 1))
+        return true
     }
     return false
   }
@@ -378,8 +372,7 @@ class Crispy {
     this.update_config({filter: this.filter})
   }
 
-  async is_admin(username) {
-    let profile = await this.get_user_profile(username)
+  async is_admin(profile) {
     return this.admins.has(profile)
   }
 
@@ -396,26 +389,25 @@ class Crispy {
   }
 
   async capture_message() {
+    let message = {}
     let chat_messages = await this.browser.$$('.chat__Message')
-    let username = ''
-    let message = ''
-    let id = ''
     if (chat_messages.length) {
       let chat_message = chat_messages.slice(-1)[0]
       let innerHTML = await chat_message.getHTML()
-      id = chat_message.elementId
+      message.id = chat_message.elementId
       try {
         if (innerHTML.includes('chat__MessageHandle')) {
           let handle = await chat_message.$('.chat__MessageHandle')
-          username = await handle.getText()
+          message.username = await handle.getText()
+          message.profile = await this.get_user_profile(message.username)
         }
         let body = await chat_message.$('.chat__MessageBody')
-        message = await body.getText()
+        message.text = await body.getText()
       } catch (err) {
         if (this.debug) console.log(err)
       }
     }
-    return {username: username, message: message, id: id}
+    return message
   }
 
   has_user_account() {
@@ -527,22 +519,17 @@ class Crispy {
 
 
   async get_user_profile(username) {
-    let profile = ''
+    let profile = null
     if (username) {
       await this.click_username(username)
       try {
         let check = await this.browser.$('//button[text()="Profile"]')
         if (!check.error) {
           profile = await this.browser.$('.dropdown__Option-header')
-          if (!profile.error)
-            profile = await profile.getText()
-          else {
-            profile = ''
-          }
+          if (!profile.error) profile = await profile.getText()
         }
       } catch(err) {
         if (this.debug) console.log(err)
-        profile = ''
       }
       await this.click_chat()
     }
@@ -668,12 +655,13 @@ class Crispy {
     }
   }
 
-  async train_vocabulary(username, message, id) {
-    if (username && message && this.last_message != id) {
+  async train_vocabulary(message) {
+    if (message.username && message.text && this.last_message.id != message.id) {
       for (let name in this.vocabularies) {
         if (this.vocabularies[name].training) {
-          if (!this.is_trained(name, username, message) && message.length > this.min_len) {
-            await this.vocabularies[name].add_text(message, {username:username})
+          if (!this.is_trained(name, message) && message.text.length > this.min_len) {
+            let username = message.profile ? message.profile : message.username
+            this.vocabularies[name].add_text(message.text, {username:username})
           }
         }
       }
@@ -684,8 +672,9 @@ class Crispy {
   return this.vocabulary.make_sentence(this.max_len, {debug: this.debug, tries: this.max_tries, filter: this.cache, case_sensitive: this.case_sensitive})
   }
 
-  generate_message_from(username, message) {
-    return this.vocabulary.make_sentence_from(message, this.max_len, {debug: this.debug, tries: this.max_tries, similarity: this.similarity_score, filter: this.cache, username: username, case_sensitive: this.case_sensitive})
+  generate_message_from(message) {
+    let username = message.profile ? message.profile : message.username
+    return this.vocabulary.make_sentence_from(message.text, this.max_len, {debug: this.debug, tries: this.max_tries, similarity: this.similarity_score, filter: this.cache, username: username, case_sensitive: this.case_sensitive})
   }
 
   current_time() {
@@ -709,14 +698,15 @@ class Crispy {
     this.save({force: true})
   }
 
-  capture_action(message) {
-    return {username: message.split(/\s+/)[1], message: message.split(/\s+/).slice(1).join(' ')}
+  async capture_action(message) {
+    message.username = message.text.split(/\s+/)[1]
+    message.text = message.text.split(/\s+/).slice(1).join(' ')
+    message.profile = await this.get_user_profile(message.username)
   }
 
-  async answer_to(username, message) {
-    let text = this.generate_message_from(username, message)
+  async answer_to(message) {
+    let text = this.generate_message_from(message)
     if (text) {
-      this.cache.add(text)
       await this.send_message(text)
     }
   }
@@ -744,18 +734,18 @@ class Crispy {
     }
   }
 
-  async check_for_triggers(username, message) {
-    if (await this.is_target(username) || this.is_trigger(message)) {
-      await this.answer_to(username, message)
+  async check_for_triggers(message) {
+    if (await this.is_target(message) || this.is_trigger(message)) {
+      await this.answer_to(message)
       return true
     }
     return false
   }
 
-  async check_for_banned(username, message) {
-    let banned = await this.is_banned(username, message)
+  async check_for_banned(message) {
+    let banned = await this.is_banned(message)
     if (banned) {
-      await this.ban(username)
+      await this.ban(message.username)
       if (banned == 2 && this.clear_banned) {
         await this.clear()
       }
@@ -764,10 +754,10 @@ class Crispy {
     return false
   }
 
-  async check_for_kicked(username, message) {
-    let kicked = await this.is_kicked(username, message)
+  async check_for_kicked(message) {
+    let kicked = await this.is_kicked(message)
     if (kicked) {
-      await this.kick(username)
+      await this.kick(message.username)
       if (kicked == 2 && this.clear_kicked) {
         await this.clear()
       }
@@ -776,8 +766,8 @@ class Crispy {
     return false
   }
 
-  async check_for_cleared(username, message) {
-    let cleared = await this.is_cleared(username, message)
+  async check_for_cleared(message) {
+    let cleared = await this.is_cleared(message)
     if (cleared) {
       await this.clear()
       return true
@@ -785,10 +775,10 @@ class Crispy {
     return false
   }
 
-  async check_for_silenced(username, message) {
-    let silenced = await this.is_silenced(username, message)
+  async check_for_silenced(message) {
+    let silenced = await this.is_silenced(message)
     if (silenced) {
-      await this.silence(username)
+      await this.silence(message.username)
       return true
     }
     return false
@@ -941,19 +931,20 @@ class Crispy {
     await this.refresh()
   }
 
-  check_name_change(username, message) {
-    if (!username && message.includes(this.name_change)) {
-      username = message.split(this.name_change)
-      if (username.length == 2)
-        username = username[1].trim()
+  async check_name_change(message) {
+    if (!message.username && message.text.includes(this.name_change)) {
+      let split = message.text.split(this.name_change)
+      if (split.length == 2) {
+        message.username = split[1].trim()
+        message.profile = await this.get_user_profile(message.username)
+      }
     }
-    return username
   }
 
-  async check_for_command(username, message, id) {
-    if (this.is_command(message)) {
-      if (await this.is_admin(username)) {
-        if (this.last_message != id) await this.try_command(username, message)
+  async check_for_command(message) {
+    if (this.is_command(message.text)) {
+      if (await this.is_admin(message.profile)) {
+        if (this.last_message.id != message.id) await this.try_command(message)
       } else {
         await this.send_message(this.deny_message)
       }
@@ -972,32 +963,30 @@ class Crispy {
         while (this.logged_in) {
           if (this.exit) await this.shutdown()
           this.check_for_routines()
-          await this.check_for_closed()
-          let {username, message, id} = await this.capture_message()
-          if (this.debug) console.log({username: username, message: message, id: id})
-          if (!this.is_bot(username)) {
-            let is_command = await this.check_for_command(username, message, id)
+          if (this.cam_check) await this.check_for_closed()
+          let message = await this.capture_message()
+          if (this.debug && this.last_message.id != message.id) console.log(message)
+          if (!this.is_bot(message.username)) {
+            let is_command = await this.check_for_command(message)
             if (!is_command) {
-              if (this.is_action(username, message)) {
-                let action = this.capture_action(message)
-                username = action.username
-                message = action.message
+              if (this.is_action(message)) {
+                await this.capture_action(message)
               }
-              if (await this.filter_message(username, message)) {
-                await this.check_for_triggers(username, message)
-                this.train_vocabulary(username, message, id)
-              } else if (this.has_user_account() && this.last_message != id) {
-                username = this.check_name_change(username, message)
-                if (!this.is_bot(username)) {
-                  await this.check_for_kicked(username, message)
-                  await this.check_for_banned(username, message)
-                  await this.check_for_cleared(username, message)
-                  await this.check_for_silenced(username, message)
+              if (await this.filter_message(message)) {
+                await this.check_for_triggers(message)
+                this.train_vocabulary(message)
+              } else if (this.has_user_account() && this.last_message.id != message.id) {
+                await this.check_name_change(message)
+                if (!this.is_bot(message.username)) {
+                  await this.check_for_kicked(message)
+                  await this.check_for_banned(message)
+                  await this.check_for_cleared(message)
+                  await this.check_for_silenced(message)
                 }
               }
             }
           }
-          this.last_message = id
+          this.last_message = message
         }
       }
     } catch (err) {
