@@ -518,19 +518,25 @@ class Crispy {
     }
   }
 
-
   async get_user_profile(username) {
     let profile = null
     if (username) {
       await this.click_username(username)
       try {
-        let check = await this.browser.$('//button[text()="Profile"]')
+        let check = await this.browser.$('//a[text()="Full profile"]')
+        await check.waitForExist(1000)
+        check = await this.browser.$('//a[text()="Full profile"]')
+        console.log(check)
         if (!check.error) {
-          profile = await this.browser.$('.dropdown__Option-header')
+          profile = await this.browser.$('.modal__Header')
           if (!profile.error) profile = await profile.getText()
         }
       } catch(err) {
         if (this.debug) console.log(err)
+      }
+      let close = await this.browser.$('.modal__Button-close')
+      if (!close.error) {
+        await close.click()
       }
       await this.click_chat()
     }
