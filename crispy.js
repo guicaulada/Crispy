@@ -532,7 +532,6 @@ class Crispy {
         let check = await this.browser.$('//a[text()="Full profile"]')
         await check.waitForExist(1000)
         check = await this.browser.$('//a[text()="Full profile"]')
-        console.log(check)
         if (!check.error) {
           profile = await this.browser.$('.modal__Header')
           if (!profile.error) profile = await profile.getText()
