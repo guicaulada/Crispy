@@ -434,45 +434,51 @@ class Crispy {
     this.last_refresh = this.current_time()
     await this.browser.url(this.url)
     let nickname = await this.browser.$('.form__Input-inline')
+    await nickname.waitForExist(5000)
+    nickname = await this.browser.$('.form__Input-inline')
     if (nickname) {
       try {
         await nickname.setValue(this.bot)
         let go = await this.browser.$('//button[text()="Go"]')
         await go.click()
+        await this.browser.waitUntil(async () => {
+          let nickname = await this.browser.$('.form__Input-inline')
+          return nickname.error
+        }, 5000)
+        try {
+          let close = await this.browser.$('//span[text()="Hide cams"]')
+          await close.click()
+        } catch {
+          console.log('\nNo open cameras found! Unable to close cams, will try again next refresh.')
+        }
+        try {
+          if (!this.logged_in) {
+            let gear = await this.browser.$('.fa-gear')
+            await gear.click()
+            let youtube = await this.browser.$('#enableyoutubevideos')
+            if (await youtube.isSelected()) {
+              await youtube.click()
+              await gear.click()
+            }
+            let darkmode = await this.browser.$('#enabledarktheme')
+            if (!await darkmode.isSelected()) {
+              await darkmode.click()
+            }
+            let volume = await this.browser.$('.chat__HeaderOption-streamVolume')
+            await volume.click()
+            let sounds = await this.browser.$('.chat__HeaderOption-sounds')
+            await sounds.click()
+          }
+          this.logged_in = true
+          console.log('\nLogin complete! Bot is ready to receive messages!\n')
+        } catch {
+          console.log(`\nFailed to login! ${this.bot} already in use? Refreshing...`)
+          await this.force_refresh()
+        }
       } catch {
         console.log('\nFailed to set nickname, input not found, restarting driver.\n')
         await this.restart_driver()
         return await this.login()
-      }
-      try {
-        let close = await this.browser.$('//span[text()="Close cams"]')
-        await close.click()
-      } catch {
-        console.log('\nNo open cameras found! Unable to close cams, will try again next refresh.')
-      }
-      try {
-        if (!this.logged_in) {
-          let gear = await this.browser.$('.fa-gear')
-          await gear.click()
-          let youtube = await this.browser.$('#enableyoutubevideos')
-          if (await youtube.isSelected()) {
-            await youtube.click()
-            await gear.click()
-          }
-          let darkmode = await this.browser.$('#enabledarktheme')
-          if (!await darkmode.isSelected()) {
-            await darkmode.click()
-          }
-          let volume = await this.browser.$('.chat__HeaderOption-streamVolume')
-          await volume.click()
-          let sounds = await this.browser.$('.chat__HeaderOption-sounds')
-          await sounds.click()
-        }
-        this.logged_in = true
-        console.log('\nLogin complete! Bot is ready to receive messages!\n')
-      } catch {
-        console.log(`\nFailed to login! ${this.bot} already in use? Refreshing...`)
-        await this.force_refresh()
       }
     }
   }
