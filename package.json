@@ -1,13 +1,13 @@
 {
   "name": "crispybot",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "An annoying bot.",
-  "main": "index.js",
+  "main": "dist/crispy.js",
   "directories": {
     "example": "example"
   },
   "scripts": {
-    "start": "node example/index.js"
+    "build": "if exist dist ( rd /s /q dist ) & tsc --build"
   },
   "repository": {
     "type": "git",
@@ -20,9 +20,13 @@
   },
   "homepage": "https://github.com/Sighmir/Crispy#readme",
   "dependencies": {
-    "chromedriver": "^2.45.0",
-    "node-markovify": "^1.0.3",
-    "pos": "^0.4.2",
-    "webdriverio": "^5.4.7"
+    "socket.io-client": "^2.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^12.7.3",
+    "@types/socket.io-client": "^1.4.32",
+    "ts-loader": "^6.0.4",
+    "tslint": "^5.19.0",
+    "typescript": "^3.6.2"
   }
 }

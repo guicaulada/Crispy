@@ -1,6 +1,2 @@
-**/.vscode
-**/__pycache__
-**/*.pyc
-**/debug.log
-**/*.bkp
-**/node_modules
+node_modules
+.env
