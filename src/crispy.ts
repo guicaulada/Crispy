@@ -64,9 +64,9 @@ export class Crispy {
     });
   }
 
-  public join(room: string) {
+  public join(room: string, user: object | undefined) {
     if (this.io) {
-      this.io.emit("room::join", { room });
+      this.io.emit("room::join", { room, user });
     } else {
       throw new Error("Socket disconnected!");
     }

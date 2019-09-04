@@ -60,9 +60,9 @@ class Crispy {
             });
         });
     }
-    join(room) {
+    join(room, user) {
         if (this.io) {
-            this.io.emit("room::join", { room });
+            this.io.emit("room::join", { room, user });
         }
         else {
             throw new Error("Socket disconnected!");

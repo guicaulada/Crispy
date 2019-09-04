@@ -6,7 +6,7 @@ export declare class Crispy {
     constructor(token: string);
     getEventPrefix(event: string): string | null;
     connect(): Promise<unknown>;
-    join(room: string): void;
+    join(room: string, user: object | undefined): void;
     getIgnoreList(roomName: string): void;
     checkYoutube(notify: boolean): void;
     handleChange(handle: string): void;
