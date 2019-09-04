@@ -34,9 +34,9 @@ export class Crispy {
     };
   }
 
-  public getEventPrefix(event: string) {
+  public getEventPrefix(eventName: string) {
     for (const prefix in this.events) {
-      if (this.events[prefix].includes(event)) {
+      if (this.events[prefix].includes(eventName)) {
         return prefix;
       }
     }
@@ -64,7 +64,7 @@ export class Crispy {
     });
   }
 
-  public join(room: string, user: object | undefined) {
+  public join(room: string, user?: object) {
     if (this.io) {
       this.io.emit("room::join", { room, user });
     } else {
@@ -80,7 +80,7 @@ export class Crispy {
     }
   }
 
-  public checkYoutube(notify: boolean) {
+  public checkYoutube(notify = true) {
     if (this.io) {
       this.io.emit("youtube::checkisplaying", { notify });
     } else {
@@ -112,7 +112,7 @@ export class Crispy {
     }
   }
 
-  public command(room: string, command: string, value: string | undefined) {
+  public command(room: string, command: string, value?: string) {
     if (this.io) {
       this.io.emit("room::message", { room, message: { command, value } });
     } else {
@@ -120,7 +120,7 @@ export class Crispy {
     }
   }
 
-  public on(event: string, handler: (data: any) => void) {
+  public on(event: string, handler: (data?: any) => void) {
     if (this.io) {
       const prefix = this.getEventPrefix(event);
       if (prefix) {
@@ -133,7 +133,7 @@ export class Crispy {
     }
   }
 
-  public emit(event: string, data: any) {
+  public emit(event: string, data?: any) {
     if (this.io) {
       this.io.emit(event, data);
     } else {

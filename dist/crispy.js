@@ -33,9 +33,9 @@ class Crispy {
             ],
         };
     }
-    getEventPrefix(event) {
+    getEventPrefix(eventName) {
         for (const prefix in this.events) {
-            if (this.events[prefix].includes(event)) {
+            if (this.events[prefix].includes(eventName)) {
                 return prefix;
             }
         }
@@ -76,7 +76,7 @@ class Crispy {
             throw new Error("Socket disconnected!");
         }
     }
-    checkYoutube(notify) {
+    checkYoutube(notify = true) {
         if (this.io) {
             this.io.emit("youtube::checkisplaying", { notify });
         }
