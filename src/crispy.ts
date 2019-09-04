@@ -114,7 +114,7 @@ export class Crispy {
 
   public command(room: string, command: string, value?: string) {
     if (this.io) {
-      this.io.emit("room::message", { room, message: { command, value } });
+      this.io.emit("room::command", { room, message: { command, value } });
     } else {
       throw new Error("Socket disconnected!");
     }
