@@ -1,12 +1,12 @@
 import io from "socket.io-client";
 
 export class Crispy {
-  public handle: string;
-  private io: SocketIOClient.Socket | undefined;
-  private events: { [index: string]: string[] };
+  public user: any;
   private token: string;
+  private events: { [index: string]: string[] };
+  private io: SocketIOClient.Socket | undefined;
   constructor(token: string) {
-    this.handle = "crispybot";
+    this.user = {};
     this.token = token;
     this.events = {
       client: [
@@ -50,11 +50,11 @@ export class Crispy {
         resolve(e);
         if (this.io) {
           this.on("handleChange", (c: any) => {
-            this.handle = c.handle;
+            this.user.handle = c.handle;
           });
 
           this.on("join", (j: any) => {
-            this.handle = j.user.handle;
+            this.user = j.user;
           });
         }
       });

@@ -12,7 +12,7 @@ crispy.connect().then(() => {
   });
   crispy.on("message", (data: any) => {
     console.log(data);
-    if (data.handle !== crispy.handle && data.message.includes("crispy")) {
+    if (data.handle !== crispy.user.handle && data.message.includes("crispy")) {
       crispy.message(ROOM, `Hello ${data.handle}!`);
     }
   });

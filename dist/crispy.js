@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const socket_io_client_1 = __importDefault(require("socket.io-client"));
 class Crispy {
     constructor(token) {
-        this.handle = "crispybot";
+        this.user = {};
         this.token = token;
         this.events = {
             client: [
@@ -48,10 +48,10 @@ class Crispy {
                 resolve(e);
                 if (this.io) {
                     this.on("handleChange", (c) => {
-                        this.handle = c.handle;
+                        this.user.handle = c.handle;
                     });
                     this.on("join", (j) => {
-                        this.handle = j.user.handle;
+                        this.user = j.user;
                     });
                 }
             });

@@ -1,8 +1,8 @@
 export declare class Crispy {
-    handle: string;
-    private io;
-    private events;
+    user: any;
     private token;
+    private events;
+    private io;
     constructor(token: string);
     getEventPrefix(eventName: string): string | null;
     connect(): Promise<unknown>;
