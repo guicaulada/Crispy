@@ -62,7 +62,7 @@ class Crispy {
             };
         }
         this._initCorpus();
-        setInterval(this.cleanCooldown);
+        setInterval(this.cleanCooldown, this.options.cooldownInterval * 1000 * 60);
     }
     get io() {
         if (this._io) {

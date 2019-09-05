@@ -1,6 +1,7 @@
 import { MarkovGenerateOptions, MarkovResult } from "markov-strings";
 interface ICrispyOptions {
     [key: string]: any;
+    cooldownInterval: number;
     stateSize: number;
     minLength: number;
     minWords: number;

@@ -21,6 +21,7 @@ import io from "socket.io-client";
 
 interface ICrispyOptions {
   [key: string]: any;
+  cooldownInterval: number;
   stateSize: number;
   minLength: number;
   minWords: number;
@@ -104,7 +105,7 @@ export class Crispy {
     }
 
     this._initCorpus();
-    setInterval(this.cleanCooldown);
+    setInterval(this.cleanCooldown, this.options.cooldownInterval * 1000 * 60);
   }
 
   get io() {
