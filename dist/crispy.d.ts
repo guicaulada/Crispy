@@ -1,11 +1,11 @@
 import { MarkovGenerateOptions, MarkovResult } from "markov-strings";
 interface ICrispyOptions {
     [key: string]: any;
-    cooldown: number;
-    stateSize: number;
-    minLength: number;
-    minWords: number;
-    minScore: number;
+    cooldown?: number;
+    stateSize?: number;
+    minLength?: number;
+    minWords?: number;
+    minScore?: number;
     maxTries?: number;
     prng?: () => number;
     filter?: (result: MarkovResult) => boolean;

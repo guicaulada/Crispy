@@ -21,11 +21,11 @@ import io from "socket.io-client";
 
 interface ICrispyOptions {
   [key: string]: any;
-  cooldown: number;
-  stateSize: number;
-  minLength: number;
-  minWords: number;
-  minScore: number;
+  cooldown?: number;
+  stateSize?: number;
+  minLength?: number;
+  minWords?: number;
+  minScore?: number;
   maxTries?: number;
   prng?: () => number;
   filter?: (result: MarkovResult) => boolean;
@@ -49,16 +49,8 @@ export class Crispy {
 
   constructor(token: string, options = {} as ICrispyOptions) {
     this.user = {};
+    this.options = options;
     this.cooldown = new Set();
-
-    this.options = Object.assign({}, {
-      cooldown: 5,
-      minLength: 0,
-      minScore: 0,
-      minWords: 0,
-      stateSize: 3,
-    }, options);
-
     this.db = low(new FileSync("db.json"));
     this.db.defaults({ messages: [] }).write();
     this._api = "https://jumpin.chat/api";
@@ -96,16 +88,16 @@ export class Crispy {
 
     if (!this.options.filter) {
       this.options.filter = (result: MarkovResult) => {
-        return result.string.length >= this.options.minLength &&
-          result.string.split(" ").length >= this.options.minWords &&
+        return result.string.length >= (this.options.minLength || 0) &&
+          result.string.split(" ").length >= (this.options.minWords || 0) &&
           !result.refs.map((o) => o.string).includes(result.string) &&
-          result.score >= this.options.minScore &&
+          result.score >= (this.options.minScore || 0) &&
           !this.cooldown.has(result.string);
       };
     }
 
     this._initCorpus();
-    setInterval(this.cleanCooldown, this.options.cooldown * 1000 * 60);
+    setInterval(this.cleanCooldown, (this.options.cooldown || 5) * 1000 * 60);
   }
 
   get io() {

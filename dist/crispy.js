@@ -11,14 +11,8 @@ const socket_io_client_1 = __importDefault(require("socket.io-client"));
 class Crispy {
     constructor(token, options = {}) {
         this.user = {};
+        this.options = options;
         this.cooldown = new Set();
-        this.options = Object.assign({}, {
-            cooldown: 5,
-            minLength: 0,
-            minScore: 0,
-            minWords: 0,
-            stateSize: 3,
-        }, options);
         this.db = low(new FileSync("db.json"));
         this.db.defaults({ messages: [] }).write();
         this._api = "https://jumpin.chat/api";
@@ -54,15 +48,15 @@ class Crispy {
         }
         if (!this.options.filter) {
             this.options.filter = (result) => {
-                return result.string.length >= this.options.minLength &&
-                    result.string.split(" ").length >= this.options.minWords &&
+                return result.string.length >= (this.options.minLength || 0) &&
+                    result.string.split(" ").length >= (this.options.minWords || 0) &&
                     !result.refs.map((o) => o.string).includes(result.string) &&
-                    result.score >= this.options.minScore &&
+                    result.score >= (this.options.minScore || 0) &&
                     !this.cooldown.has(result.string);
             };
         }
         this._initCorpus();
-        setInterval(this.cleanCooldown, this.options.cooldown * 1000 * 60);
+        setInterval(this.cleanCooldown, (this.options.cooldown || 5) * 1000 * 60);
     }
     get io() {
         if (this._io) {
