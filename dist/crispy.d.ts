@@ -1,6 +1,7 @@
 import { MarkovGenerateOptions, MarkovResult } from "markov-strings";
-interface ICrispyOptions {
+export interface ICrispyOptions {
     [key: string]: any;
+    prefix?: string;
     cooldown?: number;
     stateSize?: number;
     minLength?: number;
@@ -10,19 +11,36 @@ interface ICrispyOptions {
     prng?: () => number;
     filter?: (result: MarkovResult) => boolean;
 }
+export interface IJumpinMessage {
+    [key: string]: string;
+    handle: string;
+    color: string;
+    userId: string;
+    message: string;
+    timestamp: string;
+    id: string;
+}
+export declare type CrispyCommand = (args: string[], data: IJumpinMessage) => void;
 export declare class Crispy {
     db: any;
     user: any;
     options: ICrispyOptions;
     cooldown: Set<string>;
+    commands: {
+        [key: string]: CrispyCommand;
+    };
     private _api;
     private _url;
     private _token;
+    private _room;
+    private _cors;
+    private _headers;
     private _globalCorpus;
     private _userCorpus;
     private _events;
     private _io;
     constructor(token: string, options?: ICrispyOptions);
+    readonly room: string;
     readonly io: SocketIOClient.Socket;
     getEventPrefix(eventName: string): string | null;
     connect(): Promise<unknown>;
@@ -35,26 +53,38 @@ export declare class Crispy {
     command(room: string, command: string, value?: string): SocketIOClient.Socket;
     on(event: string, handler: (data?: any) => void): SocketIOClient.Emitter;
     emit(event: string, data?: any): void;
-    getCurrentUser(): Promise<unknown>;
-    getUserProfile(userId: string): Promise<unknown>;
-    getUnreadMessages(userId: string): Promise<unknown>;
-    checkCanBroadcast(room: string): Promise<unknown>;
-    getRoomEmojis(room: string): Promise<unknown>;
-    getRoomPlaylist(room: string): Promise<unknown>;
-    searchYoutube(query: string): Promise<unknown>;
-    getTurnServer(): Promise<unknown>;
-    getJanusToken(): Promise<unknown>;
-    getJanusEndpoints(): Promise<unknown>;
+    getCurrentUser(): any;
+    getUserProfile(userId: string): any;
+    getUnreadMessages(userId: string): any;
+    checkCanBroadcast(room: string): any;
+    getRoom(room: string): any;
+    getRoomEmojis(room: string): any;
+    getRoomPlaylist(room: string): any;
+    searchYoutube(query: string): any;
+    getTurnServer(): any;
+    getJanusToken(): any;
+    getJanusEndpoints(): any;
     addUniqueMessage(message: string, user?: string): boolean;
+    hasMessage(message: string): any;
     addMessage(message: string, user?: string): void;
     getMessages(user?: string): any;
+    removeMessage(message: string, user?: string): any;
     hasUser(user: string): any;
     getUsers(): any;
+    removeUser(user: string): any;
+    isAdmin(username: string): any;
+    setAdmins(usernames: string[]): any;
+    addAdmin(username: string): any;
+    removeAdmin(username: string): any;
+    hasCommand(command: string): boolean;
+    addCommand(command: string, handler: CrispyCommand): void;
+    removeCommand(command: string): void;
     generateMessage(user?: string, options?: MarkovGenerateOptions): any;
     cleanCooldown(): void;
+    markovFilter(result: MarkovResult): boolean;
+    private _prng;
     private _initCorpus;
     private _buildCorpus;
     private _requestPromise;
 }
-export {};
 //# sourceMappingURL=crispy.d.ts.map
