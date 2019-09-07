@@ -1,6 +1,16 @@
 import { MarkovGenerateOptions, MarkovResult } from "markov-strings";
+export interface IJumpinMessage {
+    [key: string]: string;
+    handle: string;
+    color: string;
+    userId: string;
+    message: string;
+    timestamp: string;
+    id: string;
+}
 export interface ICrispyOptions {
     [key: string]: any;
+    headless?: boolean;
     prefix?: string;
     cooldown?: number;
     stateSize?: number;
@@ -11,30 +21,19 @@ export interface ICrispyOptions {
     prng?: () => number;
     filter?: (result: MarkovResult) => boolean;
 }
-export interface IJumpinMessage {
-    [key: string]: string;
-    handle: string;
-    color: string;
-    userId: string;
-    message: string;
-    timestamp: string;
-    id: string;
-}
 export declare type CrispyCommand = (args: string[], data: IJumpinMessage) => void;
 export declare class Crispy {
-    db: any;
     user: any;
     options: ICrispyOptions;
-    cooldown: Set<string>;
-    commands: {
-        [key: string]: CrispyCommand;
-    };
+    private _db;
     private _api;
     private _url;
     private _token;
     private _room;
-    private _cors;
-    private _headers;
+    private _commands;
+    private _browser;
+    private _page;
+    private _cooldown;
     private _globalCorpus;
     private _userCorpus;
     private _events;
@@ -65,17 +64,19 @@ export declare class Crispy {
     getJanusToken(): any;
     getJanusEndpoints(): any;
     addUniqueMessage(message: string, user?: string): boolean;
-    hasMessage(message: string): any;
+    hasMessage(message: string): boolean;
     addMessage(message: string, user?: string): void;
     getMessages(user?: string): any;
     removeMessage(message: string, user?: string): any;
-    hasUser(user: string): any;
+    hasUser(user: string): boolean;
     getUsers(): any;
     removeUser(user: string): any;
     isAdmin(username: string): any;
     setAdmins(usernames: string[]): any;
     addAdmin(username: string): any;
     removeAdmin(username: string): any;
+    checkAdmin(handle: string): Promise<unknown>;
+    isCommand(message: string): boolean;
     hasCommand(command: string): boolean;
     addCommand(command: string, handler: CrispyCommand): void;
     removeCommand(command: string): void;
@@ -85,6 +86,8 @@ export declare class Crispy {
     private _prng;
     private _initCorpus;
     private _buildCorpus;
-    private _requestPromise;
+    private _getBrowser;
+    private _getPage;
+    private _getPageContent;
 }
 //# sourceMappingURL=crispy.d.ts.map

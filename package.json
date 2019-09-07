@@ -1,6 +1,6 @@
 {
   "name": "crispybot",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "An annoying bot.",
   "main": "dist/crispy.js",
   "directories": {
@@ -22,13 +22,13 @@
   "dependencies": {
     "lowdb": "^1.0.0",
     "markov-strings": "^2.1.0",
-    "request": "^2.88.0",
+    "puppeteer": "^1.19.0",
     "socket.io-client": "^2.2.0"
   },
   "devDependencies": {
     "@types/lowdb": "^1.0.9",
     "@types/node": "^12.7.3",
-    "@types/request": "^2.48.2",
+    "@types/puppeteer": "^1.19.1",
     "@types/socket.io-client": "^1.4.32",
     "ts-loader": "^6.0.4",
     "tslint": "^5.19.0",

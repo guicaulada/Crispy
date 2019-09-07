@@ -20,7 +20,7 @@ to make a bot to keep up with him.
 - **Sep 4, 2019**: Rewrote it using TypeScript and WebSocket for simpler implementation.
 
 ## Requirements
-This project uses [socket.io-client](https://www.npmjs.com/package/socket.io-client).  
+This project uses [lowdb](https://www.npmjs.com/package/lowdb), [markov-strings](https://www.npmjs.com/package/markov-strings), [puppeteer](https://www.npmjs.com/package/puppeteer) and [socket.io-client](https://www.npmjs.com/package/socket.io-client).  
 All requirements can be installed with `npm install` following the installation instructions.  
 This project was made using **NodeJS v10.3.0**, it was **not tested** for any other versions.
 

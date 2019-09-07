@@ -16,21 +16,8 @@
 import low = require("lowdb");
 import FileSync = require("lowdb/adapters/FileSync");
 import Markov, { MarkovGenerateOptions, MarkovResult } from "markov-strings";
-import request from "request";
+import puppeteer, { Browser, Page } from "puppeteer";
 import io from "socket.io-client";
-
-export interface ICrispyOptions {
-  [key: string]: any;
-  prefix?: string;
-  cooldown?: number;
-  stateSize?: number;
-  minLength?: number;
-  minWords?: number;
-  minScore?: number;
-  maxTries?: number;
-  prng?: () => number;
-  filter?: (result: MarkovResult) => boolean;
-}
 
 export interface IJumpinMessage {
   [key: string]: string;
@@ -42,21 +29,35 @@ export interface IJumpinMessage {
   id: string;
 }
 
+export interface ICrispyOptions {
+  [key: string]: any;
+  headless?: boolean;
+  prefix?: string;
+  cooldown?: number;
+  stateSize?: number;
+  minLength?: number;
+  minWords?: number;
+  minScore?: number;
+  maxTries?: number;
+  prng?: () => number;
+  filter?: (result: MarkovResult) => boolean;
+}
+
 export type CrispyCommand = (args: string[], data: IJumpinMessage) => void;
 
 export class Crispy {
-  public db: any;
   public user: any;
   public options: ICrispyOptions;
-  public cooldown: Set<string>;
-  public commands: { [key: string]: CrispyCommand};
 
+  private _db: any;
   private _api: string;
   private _url: string;
   private _token: string;
   private _room: string;
-  private _cors: string;
-  private _headers: { [index: string]: any };
+  private _commands: { [key: string]: CrispyCommand };
+  private _browser: Browser | undefined;
+  private _page: Page | undefined;
+  private _cooldown: Set<string>;
 
   private _globalCorpus: any;
   private _userCorpus: { [index: string]: any };
@@ -65,16 +66,15 @@ export class Crispy {
 
   constructor(token: string, options = {} as ICrispyOptions) {
     this.user = {};
-    this.commands = {};
     this.options = options;
-    this.cooldown = new Set();
-    this.db = low(new FileSync("db.json"));
-    this.db.defaults({ admins: [], messages: [] }).write();
+    this._cooldown = new Set();
+    this._db = low(new FileSync("db.json"));
+    this._db.defaults({ admins: [], messages: [] }).write();
     this._room = "";
-    this._cors = "https://cors-anywhere.herokuapp.com/";
     this._api = "https://jumpin.chat/api";
     this._url = "https://jumpin.chat";
     this._token = token;
+    this._commands = {};
     this._userCorpus = {};
     this._events = {
       client: [
@@ -111,37 +111,21 @@ export class Crispy {
 
     this.on("message", async (data: IJumpinMessage) => {
       if (data.handle !== this.user.handle) {
-        let room;
-        try {
-          room = await this.getRoom(this.room);
-        } catch {
-          // Failed to get room info (WIP)
-        } finally {
-          if (room) {
-            const user = room.users.filter((u: any) => u.handle === data.handle)[0];
-            if (user && user.username && this.isAdmin(user.username)) {
-              if ((this.options.prefix || "!") === data.message[0]) {
-                const args = data.message.slice(1, data.message.length).split(/\s+/);
-                const command = args.shift();
-                for (const cmd in this.commands) {
-                  if (command === cmd) {
-                    this.commands[cmd](args, data);
-                    break;
-                  }
-                }
-              }
+        if (this.isCommand(data.message)) {
+          const args = data.message.slice(1, data.message.length).split(/\s+/);
+          const command = args.shift();
+          for (const cmd in this._commands) {
+            if (command === cmd) {
+              this._commands[cmd](args, data);
+              break;
             }
           }
         }
       }
     });
 
-    this._headers = {
-      Origin: this._url,
-    };
-
     this._initCorpus();
-    setInterval(this.cleanCooldown, (this.options.cooldown || 5) * 1000 * 60);
+    setInterval(this.cleanCooldown, (this.options._cooldown || 5) * 1000 * 60);
   }
 
   get room() {
@@ -172,7 +156,6 @@ export class Crispy {
   public connect() {
     return new Promise((resolve, reject) => {
       this.io.on("connect", (e: any) => {
-        resolve(e);
         this.on("handleChange", (c: any) => {
           this.user.handle = c.handle;
         });
@@ -180,6 +163,7 @@ export class Crispy {
         this.on("join", (j: any) => {
           this.user = j.user;
         });
+        resolve(e);
       });
       this.io.on("error", (e: any) => {
         reject(e);
@@ -189,6 +173,9 @@ export class Crispy {
 
   public join(room: string, user?: object) {
     this._room = room;
+    this._getPage(this._url + "/" + room).then((page: any) => {
+      page.waitForSelector(".chat").then(() => page.close()).catch();
+    }).catch();
     return this.io.emit("room::join", { room, user });
   }
 
@@ -230,164 +217,136 @@ export class Crispy {
   }
 
   public getCurrentUser() {
-    return new Promise((resolve, reject) => {
-      request.get(this._cors + this._api + "/user", {
-        headers: this._headers,
-      }, this._requestPromise(resolve, reject));
-    }) as any;
+    return this._getPageContent(this._api + "/user") as any;
   }
 
   public getUserProfile(userId: string) {
-    return new Promise((resolve, reject) => {
-      request.get(this._cors + this._api + `/user/${userId}/profile`, {
-        headers: this._headers,
-      }, this._requestPromise(resolve, reject));
-    }) as any;
+    return this._getPageContent(this._api + `/user/${userId}/profile`) as any;
   }
 
   public getUnreadMessages(userId: string) {
-    return new Promise((resolve, reject) => {
-      request.get(this._cors + this._api + `/message/${userId}/unread`, {
-        headers: this._headers,
-      }, this._requestPromise(resolve, reject));
-    }) as any;
+    return this._getPageContent(this._api + `/message/${userId}/unread`) as any;
   }
 
   public checkCanBroadcast(room: string) {
-    return new Promise((resolve, reject) => {
-      request.get(this._cors + this._api + `/user/checkCanBroadcast/${room}`, {
-        headers: this._headers,
-      }, this._requestPromise(resolve, reject));
-    }) as any;
+    return this._getPageContent(this._api + `/user/checkCanBroadcast/${room}`) as any;
   }
 
   public getRoom(room: string) {
-    return new Promise((resolve, reject) => {
-      request.get(this._cors + this._api + `/rooms/${room}`, {
-        headers: this._headers,
-      }, this._requestPromise(resolve, reject));
-    }) as any;
+    return this._getPageContent(this._api + `/rooms/${room}`) as any;
   }
 
   public getRoomEmojis(room: string) {
-    return new Promise((resolve, reject) => {
-      request.get(this._cors + this._api + `/rooms/${room}/emoji`, {
-        headers: this._headers,
-      }, this._requestPromise(resolve, reject));
-    }) as any;
+    return this._getPageContent(this._api + `/rooms/${room}/emoji`) as any;
   }
 
   public getRoomPlaylist(room: string) {
-    return new Promise((resolve, reject) => {
-      request.get(this._cors + this._api + `/youtube/${room}/playlist`, {
-        headers: this._headers,
-      }, this._requestPromise(resolve, reject));
-    }) as any;
+    return this._getPageContent(this._api + `/youtube/${room}/playlist`) as any;
   }
 
   public searchYoutube(query: string) {
-    return new Promise((resolve, reject) => {
-      request.get(this._cors + this._api + `/youtube/search/${query}`, {
-        headers: this._headers,
-      }, this._requestPromise(resolve, reject));
-    }) as any;
+    return this._getPageContent(this._api + `/youtube/search/${query}`) as any;
   }
 
   public getTurnServer() {
-    return new Promise((resolve, reject) => {
-      request.get(this._cors + this._api + "/turn", {
-        headers: this._headers,
-      }, this._requestPromise(resolve, reject));
-    }) as any;
+    return this._getPageContent(this._api + "/turn") as any;
   }
 
   public getJanusToken() {
-    return new Promise((resolve, reject) => {
-      request.get(this._cors + this._api + "/janus/token", {
-        headers: this._headers,
-      }, this._requestPromise(resolve, reject));
-    }) as any;
+    return this._getPageContent(this._api + "/janus/token") as any;
   }
 
   public getJanusEndpoints() {
-    return new Promise((resolve, reject) => {
-      request.get(this._cors + this._api + "/janus/endpoints", {
-        headers: this._headers,
-      }, this._requestPromise(resolve, reject));
-    }) as any;
+    return this._getPageContent(this._api + "/janus/endpoints") as any;
   }
 
   public addUniqueMessage(message: string, user?: string) {
-    if (!this.db.get("messages").has({ user, message }).value()) {
-      this.db.get("messages").push({ user, message }).write();
+    if (!this._db.get("messages").find({ user, message }).value()) {
+      this._db.get("messages").push({ user, message }).write();
       return true;
     }
     return false;
   }
 
   public hasMessage(message: string) {
-    return this.db.get("messages").has({ message }).value();
+    return this._db.get("messages").filter({ message }).size().value() > 0;
   }
 
   public addMessage(message: string, user?: string) {
-    this.db.get("messages").push({ user, message }).write();
+    this._db.get("messages").push({ user, message }).write();
     this._buildCorpus(user);
   }
 
   public getMessages(user?: string) {
     if (user) {
-      return this.db.get("messages").filter({ user }).map("message").value();
+      return this._db.get("messages").filter({ user }).map("message").value();
     } else {
-      return this.db.get("messages").map("message").value();
+      return this._db.get("messages").map("message").value();
     }
   }
 
   public removeMessage(message: string, user?: string) {
     if (user) {
-      return this.db.get("messages").remove({ message }).write();
+      return this._db.get("messages").remove({ message }).write();
     } else {
-      return this.db.get("messages").remove({ message, user }).write();
+      return this._db.get("messages").remove({ message, user }).write();
     }
   }
 
   public hasUser(user: string) {
-    return this.db.get("messages").has({ user }).value();
+    return this._db.get("messages").filter({ user }).size().value() > 0;
   }
 
   public getUsers() {
-    return this.db.get("messages").map("user").uniq().value();
+    return this._db.get("messages").map("user").uniq().value();
   }
 
   public removeUser(user: string) {
-    return this.db.get("messages").remove({ user }).write();
+    return this._db.get("messages").remove({ user }).write();
   }
 
   public isAdmin(username: string) {
-    return this.db.get("admins").has(username).value();
+    return this._db.get("admins").value().includes(username);
   }
 
   public setAdmins(usernames: string[]) {
-    return this.db.set("admins", usernames).write();
+    return this._db.set("admins", usernames).write();
   }
 
   public addAdmin(username: string) {
-    return this.db.get("admins").push(username).write();
+    return this._db.get("admins").push(username).write();
   }
 
   public removeAdmin(username: string) {
-    return this.db.get("admins").remove(username).write();
+    return this._db.get("admins").remove(username).write();
+  }
+
+  public checkAdmin(handle: string) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const room = await this.getRoom(this.room);
+        const user = room.users.filter((u: any) => u.handle === handle)[0];
+        resolve(this.isAdmin(user.username));
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  public isCommand(message: string) {
+    return (this.options.prefix || "!") === message[0];
   }
 
   public hasCommand(command: string) {
-    return this.commands[command] !== undefined;
+    return this._commands[command] !== undefined;
   }
 
   public addCommand(command: string, handler: CrispyCommand) {
-    this.commands[command] = handler.bind(this);
+    this._commands[command] = handler.bind(this);
   }
 
   public removeCommand(command: string) {
-    delete this.commands[command];
+    delete this._commands[command];
   }
 
   public generateMessage(user?: string, options = {} as MarkovGenerateOptions) {
@@ -409,12 +368,12 @@ export class Crispy {
     } else {
       message = this._globalCorpus.generate(options);
     }
-    this.cooldown.add(message.string);
+    this._cooldown.add(message.string);
     return message;
   }
 
   public cleanCooldown() {
-    this.cooldown = new Set();
+    this._cooldown = new Set();
   }
 
   public markovFilter(result: MarkovResult) {
@@ -422,7 +381,7 @@ export class Crispy {
       result.string.split(" ").length >= (this.options.minWords || 0) &&
       !result.refs.map((o) => o.string).includes(result.string) &&
       result.score >= (this.options.minScore || 0) &&
-      !this.cooldown.has(result.string);
+      !this._cooldown.has(result.string);
   }
 
   private _prng() {
@@ -449,16 +408,58 @@ export class Crispy {
     }
   }
 
-  private _requestPromise(resolve: any, reject: any) {
-    return (err: any, res: any, body: any) => {
-      if (err) {
-        return reject(err);
+  private _getBrowser() {
+    return new Promise(async (resolve, reject) => {
+      if (this._browser) {
+        resolve(this._browser);
       } else {
-        if (`${res.statusCode}`[0] !== "2") {
-          return reject({ statusCode: res.statusCode, statusMessage: res.statusMessage });
+        try {
+          this._browser = await puppeteer.launch({
+            headless: this.options.headless != null ? this.options.headless : true,
+          });
+          resolve(this._browser);
+        } catch (err) {
+          reject(err);
         }
-        return resolve(body);
       }
-    };
+    });
+  }
+
+  private _getPage(url?: any) {
+    return new Promise(async (resolve, reject) => {
+      if (this._page && !this._page.isClosed()) {
+        await this._page.goto(url || "about:blank", { waitUntil: ["networkidle0", "load", "domcontentloaded"] });
+        resolve(this._page);
+      } else {
+        try {
+          const browser = await this._getBrowser() as any;
+          this._page = await browser.newPage() as Page;
+          await this._page.goto(url || "about:blank");
+          resolve(this._page);
+        } catch (err) {
+          reject(err);
+        }
+      }
+    });
+  }
+
+  private _getPageContent(url?: any) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const page = await this._getPage(url) as Page;
+        const content = await page.evaluate(() => document.body.textContent);
+        if (!content || (content && content.includes("HTTP ERROR"))) {
+          reject(content);
+        } else {
+          try {
+            resolve(JSON.parse(content));
+          } catch {
+            resolve(content);
+          }
+        }
+      } catch (err) {
+        reject(err);
+      }
+    });
   }
 }
