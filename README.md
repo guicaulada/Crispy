@@ -9,14 +9,14 @@ he didn't seen to care when we stopped trying to answer him too... he would just
 to make a bot to keep up with him.
 
 ## History
-- *Initial version*: The bot would send messages from Ipsum Lorem everytime the real Crispy talked.
+- *Initial version*: The bot would send messages from Ipsum Lorem every time the real Crispy talked.
 - *English version*: A friend asked me to make it talk english, so I did with markovian chains.
 - *Nov 18, 2018 - First commit*: After implementing some sort of machine learning I decided it should be on GitHub.
-- *Nov 19~Dec 5, 2018*: Lots of improvements to code, speech, detection of messages, plus fixes andnew commands.
-- *Dec 6~12, 2018*: Added bot account that can be modded and profile validation for admin commands.
-- *Dec 13~16, 2018*: Fixed login issues and other errors and improves ban function.
-- *Dec 21~22, 2018*: Prepared for public release, removed personal files, made improvements and lots of refactoring.
-- *Jan 24~26, 2019*: Released it for NodeJS to make the training asynchronous, and other improvements.
+- *Nov 19 ~ Dec 5, 2018*: Lots of improvements to code, speech, detection of messages, plus fixes and new commands.
+- *Dec 6 ~ 12, 2018*: Added bot account that can be modded and profile validation for admin commands.
+- *Dec 13 ~ 16, 2018*: Fixed login issues and other errors and improves ban function.
+- *Dec 21 ~ 22, 2018*: Prepared for public release, removed personal files, made improvements and lots of refactoring.
+- *Jan 24 ~ 26, 2019*: Released it for NodeJS to make the training asynchronous, and other improvements.
 - **Sep 4, 2019**: Rewrote it using TypeScript and WebSocket for simpler implementation.
 
 ## Requirements
@@ -35,29 +35,45 @@ $ npm install crispybot
 You can now require and use crispybot like so:
 
 ```ts
-import { Crispy } from "crispybot";
+import { Crispy, IJumpInMessage } from "crispybot";
 
 const TOKEN = process.env.JUMPIN_TOKEN || "";
 const ROOM = process.env.JUMPIN_ROOM || "Crispybot";
 const HANDLE = process.env.JUMPIN_HANDLE || "Crispybot";
+const ADMIN = "Crispybot"
 
-const crispy = new Crispy(TOKEN);
+const crispy = new Crispy(TOKEN, {
+  cooldown: 5, stateSize: 3,
+});
 
-crispy.connect().then(() => {
-  crispy.on("join", () => {
-    crispy.handleChange(HANDLE);
-  });
-  crispy.on("message", (data: any) => {
-    console.log(data);
-    if (data.handle !== crispy.user.handle && data.message.includes("crispy")) {
-      crispy.message(ROOM, `Hello ${data.handle}!`);
-    }
-  });
-  crispy.on("status", (data: any) => {
-    console.log(data);
-  });
+crispy.addAdmin(ADMIN);
+
+crispy.addTarget(ADMIN);
+
+crispy.on("connect", () => {
   crispy.join(ROOM);
-}).catch((err: any) => console.error(err));
+});
+
+crispy.on("join", (data: any) => {
+  console.log(data);
+  crispy.handleChange(HANDLE);
+});
+
+crispy.on("message", async (data: any) => {
+  console.log(data);
+});
+
+crispy.on("status", (data: any) => {
+  console.log(data);
+});
+
+crispy.addCommand("nick", async (args: string[], data: IJumpInMessage) => {
+  if (args.length) {
+    if (await crispy.checkAdmin(data.handle)) {
+      crispy.handleChange(args[0]);
+    }
+  }
+});
 ```
 
 ## Contact
@@ -67,7 +83,7 @@ The bot is still under development and many of it's features are not fully teste
 ## License
 ```
 Crispy - An annoying bot.
-Copyright (C) 2018  Guilherme Caulada (Sighmir)
+Copyright (C) 2019  Guilherme Caulada (Sighmir)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

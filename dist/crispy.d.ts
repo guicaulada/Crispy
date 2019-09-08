@@ -1,5 +1,5 @@
 import { MarkovGenerateOptions, MarkovResult } from "markov-strings";
-export interface IJumpinMessage {
+export interface IJumpInMessage {
     [key: string]: string;
     handle: string;
     color: string;
@@ -10,6 +10,11 @@ export interface IJumpinMessage {
 }
 export interface ICrispyOptions {
     [key: string]: any;
+    ban?: boolean;
+    debug?: boolean;
+    target?: boolean;
+    unique?: boolean;
+    commands?: boolean;
     headless?: boolean;
     prefix?: string;
     cooldown?: number;
@@ -21,7 +26,7 @@ export interface ICrispyOptions {
     prng?: () => number;
     filter?: (result: MarkovResult) => boolean;
 }
-export declare type CrispyCommand = (args: string[], data: IJumpinMessage) => void;
+export declare type CrispyCommand = (args: string[], data: IJumpInMessage) => void;
 export declare class Crispy {
     user: any;
     options: ICrispyOptions;
@@ -32,7 +37,6 @@ export declare class Crispy {
     private _room;
     private _commands;
     private _browser;
-    private _page;
     private _cooldown;
     private _globalCorpus;
     private _userCorpus;
@@ -40,49 +44,113 @@ export declare class Crispy {
     private _io;
     constructor(token: string, options?: ICrispyOptions);
     readonly room: string;
-    readonly io: SocketIOClient.Socket;
-    getEventPrefix(eventName: string): string | null;
-    connect(): Promise<unknown>;
+    private readonly io;
     join(room: string, user?: object): SocketIOClient.Socket;
     getIgnoreList(roomName: string): SocketIOClient.Socket;
     checkYoutube(notify?: boolean): SocketIOClient.Socket;
     handleChange(handle: string): SocketIOClient.Socket;
-    isStillJoined(room: string): SocketIOClient.Socket;
-    message(room: string, message: string): SocketIOClient.Socket;
-    command(room: string, command: string, value?: string): SocketIOClient.Socket;
+    isStillJoined(): SocketIOClient.Socket;
+    message(message: string): SocketIOClient.Socket;
+    command(command: string, value?: string): SocketIOClient.Socket;
     on(event: string, handler: (data?: any) => void): SocketIOClient.Emitter;
     emit(event: string, data?: any): void;
     getCurrentUser(): any;
     getUserProfile(userId: string): any;
     getUnreadMessages(userId: string): any;
-    checkCanBroadcast(room: string): any;
-    getRoom(room: string): any;
-    getRoomEmojis(room: string): any;
-    getRoomPlaylist(room: string): any;
+    checkCanBroadcast(): any;
+    getRoom(): any;
+    getRoomEmojis(): any;
+    getRoomPlaylist(): any;
     searchYoutube(query: string): any;
     getTurnServer(): any;
     getJanusToken(): any;
     getJanusEndpoints(): any;
-    addUniqueMessage(message: string, user?: string): boolean;
-    hasMessage(message: string): boolean;
-    addMessage(message: string, user?: string): void;
+    addUniqueMessage(message: string | {
+        message: string;
+        user?: string;
+    }, user?: string): boolean;
+    addUniqueMessages(messages: Array<string | {
+        message: string;
+        user?: string;
+    }>): void;
+    hasMessage(message: string | {
+        message: string;
+        user?: string;
+    }, user?: string): boolean;
+    addMessage(message: string | {
+        message: string;
+        user?: string;
+    }, user?: string): void;
+    addMessages(messages: Array<{
+        message: string;
+        user?: string;
+    }>): void;
     getMessages(user?: string): any;
-    removeMessage(message: string, user?: string): any;
+    removeMessage(message: string | {
+        message: string;
+        user?: string;
+    }, user?: string): void;
+    removeMessages(messages: Array<{
+        message: string;
+        user?: string;
+    }>): void;
+    generateMessage(user?: string, options?: MarkovGenerateOptions): any;
+    generateMessages(maxAmount?: number, user?: string, options?: MarkovGenerateOptions): any[];
     hasUser(user: string): boolean;
     getUsers(): any;
     removeUser(user: string): any;
+    removeUsers(users: string[]): void;
     isAdmin(username: string): any;
+    getAdmins(): any;
     setAdmins(usernames: string[]): any;
     addAdmin(username: string): any;
+    addAdmins(usernames: string[]): void;
     removeAdmin(username: string): any;
+    removeAdmins(usernames: string[]): void;
     checkAdmin(handle: string): Promise<unknown>;
     isCommand(message: string): boolean;
     hasCommand(command: string): boolean;
     addCommand(command: string, handler: CrispyCommand): void;
     removeCommand(command: string): void;
-    generateMessage(user?: string, options?: MarkovGenerateOptions): any;
-    cleanCooldown(): void;
+    isTarget(handle: string): any;
+    getTargets(): any;
+    setTargets(handles: string[]): any;
+    addTarget(handle: string): any;
+    addTargets(handles: string[]): void;
+    removeTarget(handle: string): any;
+    removeTargets(handles: string): void;
+    checkTarget(handle: string): Promise<unknown>;
+    isTrigger(word: string): any;
+    getTriggers(): any;
+    setTriggers(words: string[]): any;
+    addTrigger(word: string): any;
+    addTriggers(words: string[]): void;
+    removeTrigger(word: string): any;
+    removeTriggers(words: string): void;
+    checkTrigger(message: string): boolean;
+    isIgnored(word: string): any;
+    getIgnored(): any;
+    setIgnored(words: string[]): any;
+    addIgnored(word: string | string[]): any;
+    removeIgnored(word: string | string[]): any;
+    checkIgnored(message: string): boolean;
+    isBlocked(handle: string): any;
+    getBlocked(): any;
+    setBlocked(handles: string[]): any;
+    addBlocked(handle: string | string[]): any;
+    removeBlocked(handle: string | string[]): any;
+    checkBlocked(handle: string): Promise<unknown>;
+    isBanned(handle: string): any;
+    getBanned(): any;
+    setBanned(handles: string[]): any;
+    addBanned(handle: string | string[]): any;
+    removeBanned(handle: string | string[]): any;
+    checkBanned(handleOrMessage: string): Promise<unknown>;
     markovFilter(result: MarkovResult): boolean;
+    cleanCooldown(): void;
+    get(...args: any[]): any;
+    set(...args: any[]): any;
+    private _getEventPrefix;
     private _prng;
     private _initCorpus;
     private _buildCorpus;
