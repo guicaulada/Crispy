@@ -169,10 +169,16 @@ export class Crispy {
               try {
                 const message = this.generateMessage(data.handle);
                 this.message(message.string);
+                if (this.options.debug) {
+                  console.log(message);
+                }
               } catch {
                 try {
                   const message = this.generateMessage();
                   this.message(message.string);
+                  if (this.options.debug) {
+                    console.log(message);
+                  }
                 } catch (err) {
                   if (this.options.debug) {
                     console.log(err.message);
