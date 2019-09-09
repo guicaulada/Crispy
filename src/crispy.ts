@@ -41,7 +41,7 @@ export interface ICrispyOptions {
   cooldown?: number;
   stateSize?: number;
   minLength?: number;
-  minWords?: number;
+  minMessages?: number;
   minScore?: number;
   maxTries?: number;
   prng?: () => number;
@@ -82,7 +82,7 @@ export class Crispy {
 
     this._db.defaults({
       admins: [],
-      banned: [],
+      banned: { users: [], messages: [] },
       blocked: [],
       ignored: [],
       messages: [],
@@ -156,7 +156,7 @@ export class Crispy {
             }
           } else if (
             this.options.ban &&
-            (await this.checkBanned(data.handle) || await this.checkBanned(data.message))
+            (this.checkBannedMessage(data.message) || await this.checkBannedUser(data.handle))
           ) {
             this.command("ban", data.handle);
           } else if (this.options.target) {
@@ -201,7 +201,7 @@ export class Crispy {
 
     this.on("room::handleChange", async (data: any) => {
       if (data.userId !== this.user._id) {
-        if (this.options.ban && await this.checkBanned(data.handle)) {
+        if (this.options.ban && await this.checkBannedUser(data.handle)) {
           this.command("ban", data.handle);
         }
       }
@@ -575,88 +575,88 @@ export class Crispy {
     });
   }
 
-  public isTrigger(word: string) {
-    return this._db.get("triggers").value().includes(word);
+  public isTrigger(message: string) {
+    return this._db.get("triggers").value().includes(message);
   }
 
   public getTriggers() {
     return this._db.get("triggers").value();
   }
 
-  public setTriggers(words: string[]) {
-    return this._db.set("triggers", words).write();
+  public setTriggers(messages: string[]) {
+    return this._db.set("triggers", messages).write();
   }
 
-  public addTrigger(word: string) {
-    if (!this.isTrigger(word)) {
-      return this._db.get("triggers").push(word).write();
+  public addTrigger(message: string) {
+    if (!this.isTrigger(message)) {
+      return this._db.get("triggers").push(message).write();
     }
   }
 
-  public addTriggers(words: string[]) {
-    for (const word of words) {
-      this.addTrigger(word);
+  public addTriggers(messages: string[]) {
+    for (const message of messages) {
+      this.addTrigger(message);
     }
   }
 
-  public removeTrigger(word: string) {
-    return this._db.get("triggers").pull(word).write();
+  public removeTrigger(message: string) {
+    return this._db.get("triggers").pull(message).write();
   }
 
-  public removeTriggers(words: string) {
-    for (const word of words) {
-      this.removeTrigger(word);
+  public removeTriggers(messages: string) {
+    for (const message of messages) {
+      this.removeTrigger(message);
     }
   }
 
   public checkTrigger(message: string) {
     const triggers = this.getTriggers();
-    for (const word of triggers) {
-      if (message.includes(word)) {
+    for (const m of triggers) {
+      if (message.includes(m)) {
         return true;
       }
     }
     return false;
   }
 
-  public isIgnored(word: string) {
-    return this._db.get("ignored").value().includes(word);
+  public isIgnored(message: string) {
+    return this._db.get("ignored").value().includes(message);
   }
 
   public getIgnored() {
     return this._db.get("ignored").value();
   }
 
-  public setIgnored(words: string[]) {
-    return this._db.set("ignored", words).write();
+  public setIgnored(messages: string[]) {
+    return this._db.set("ignored", messages).write();
   }
 
-  public addIgnored(word: string | string[]) {
-    if (typeof word === "string") {
-      if (!this.isIgnored(word)) {
-        return this._db.get("ignored").push(word).write();
+  public addIgnored(message: string | string[]) {
+    if (typeof message === "string") {
+      if (!this.isIgnored(message)) {
+        return this._db.get("ignored").push(message).write();
       }
     } else {
-      for (const w of word) {
-        this.addIgnored(w);
+      for (const m of message) {
+        this.addIgnored(m);
       }
     }
   }
 
-  public removeIgnored(word: string | string[]) {
-    if (typeof word === "string") {
-      return this._db.get("ignored").pull(word).write();
+  public removeIgnored(message: string | string[]) {
+    if (typeof message === "string") {
+      return this._db.get("ignored").pull(message).write();
     } else {
-      for (const w of word) {
-        this.removeIgnored(w);
+      for (const m of message) {
+        this.removeIgnored(m);
       }
     }
   }
 
   public checkIgnored(message: string) {
     const ignored = this.getIgnored();
-    for (const word of ignored) {
-      if (message.includes(word)) {
+    for (const m of ignored) {
+      if (message.includes(m)) {
         return true;
       }
     }
@@ -712,75 +712,106 @@ export class Crispy {
     });
   }
 
-  public isBanned(handle: string) {
-    return this._db.get("banned").value().includes(handle);
+  public isBannedUser(handle: string) {
+    return this._db.get("banned.users").value().includes(handle);
   }
 
-  public getBanned() {
-    return this._db.get("banned").value();
+  public isBannedMessage(message: string) {
+    return this._db.get("banned.messages").value().includes(message);
   }
 
-  public setBanned(handles: string[]) {
-    return this._db.set("banned", handles).write();
+  public getBannedUsers() {
+    return this._db.get("banned.users").value();
   }
 
-  public addBanned(handle: string | string[]) {
-    if (typeof handle === "string") {
-      if (!this.isBanned(handle)) {
-        return this._db.get("banned").push(handle).write();
-      }
-    } else {
-      for (const h of handle) {
-        this.addBanned(h);
-      }
+  public getBannedMessages() {
+    return this._db.get("banned.messages").value();
+  }
+
+  public setBannedUsers(handles: string[]) {
+    return this._db.set("banned.users", handles).write();
+  }
+
+  public setBannedMessages(messages: string[]) {
+    return this._db.set("banned.messages", messages).write();
+  }
+
+  public addBannedUser(handle: string) {
+    if (!this.isBannedUser(handle)) {
+      return this._db.get("banned.users").push(handle).write();
     }
   }
 
-  public removeBanned(handle: string | string[]) {
-    if (typeof handle === "string") {
-      return this._db.get("banned").pull(handle).write();
-    } else {
-      for (const h of handle) {
-        this.removeBanned(h);
-      }
+  public addBannedUsers(handles: string[]) {
+    for (const h of handles) {
+      this.addBannedUser(h);
     }
   }
 
-  public checkBanned(handleOrMessage: string) {
+  public addBannedMessage(message: string) {
+    if (!this.isBannedMessage(message)) {
+      return this._db.get("banned.messages").push(message).write();
+    }
+  }
+
+  public addBannedMessages(messages: string[]) {
+    for (const m of messages) {
+      this.addBannedMessage(m);
+    }
+  }
+
+  public removeBannedUser(handle: string) {
+    return this._db.get("banned.users").pull(handle).write();
+  }
+
+  public removeBannedUsers(handle: string[]) {
+    for (const h of handle) {
+      this.removeBannedUser(h);
+    }
+  }
+
+  public removeBannedMessage(message: string) {
+    return this._db.get("banned.messages").pull(message).write();
+  }
+
+  public removeBannedMessages(messages: string[]) {
+    for (const m of messages) {
+      this.removeBannedMessage(m);
+    }
+  }
+
+  public checkBannedUser(handle: string) {
     return new Promise(async (resolve, reject) => {
-      const words = handleOrMessage.split(/\s+/);
-      if (words.length > 1) {
-        const message = handleOrMessage;
-        const banned = this.getBanned();
-        for (const word of banned) {
-          if (message.includes(word)) {
-            return resolve(true);
-          }
+      if (this.isBannedUser(handle)) {
+        return resolve(true);
+      }
+      try {
+        const room = await this.getRoom();
+        const user = room.users.filter((u: any) => u.handle === handle)[0];
+        if (user) {
+          resolve(this.isBannedUser(user.username));
+        } else {
+          resolve(false);
         }
-        resolve(false);
-      } else {
-        const handle = handleOrMessage;
-        if (this.isBanned(handle)) {
-          return resolve(true);
-        }
-        try {
-          const room = await this.getRoom();
-          const user = room.users.filter((u: any) => u.handle === handle)[0];
-          if (user) {
-            resolve(this.isBanned(user.username));
-          } else {
-            resolve(false);
-          }
-        } catch (err) {
-          reject(err);
-        }
+      } catch (err) {
+        reject(err);
       }
     });
   }
 
+  public checkBannedMessage(message: string) {
+    const banned = this.getBannedMessages();
+    for (const m of banned) {
+      if (message.includes(m)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public markovFilter(result: MarkovResult) {
     return result.string.length >= (this.options.minLength || 0) &&
-      result.string.split(" ").length >= (this.options.minWords || 0) &&
+      result.string.split(" ").length >= (this.options.minMessages || 0) &&
       !result.refs.map((o) => o.string).includes(result.string) &&
       result.score >= (this.options.minScore || 0) &&
       !this._cooldown.has(result.string);

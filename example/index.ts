@@ -1,4 +1,4 @@
-import { Crispy, IJumpInMessage } from "crispybot";
+import { Crispy, IJumpInMessage } from ".."; // crispybot
 
 const TOKEN = process.env.JUMPIN_TOKEN || "";
 const ROOM = process.env.JUMPIN_ROOM || "Crispybot";
@@ -65,8 +65,16 @@ crispy.addCommand("trigger", async (args: string[], data: IJumpInMessage) => {
 crispy.addCommand("ban", async (args: string[], data: IJumpInMessage) => {
   if (args.length) {
     if (await crispy.checkAdmin(data.handle)) {
-      crispy.command("ban", args.join(" "));
-      crispy.addBanned(args.join(" "));
+      crispy.command("ban", args[0]);
+      crispy.addBannedUser(args[0]);
+    }
+  }
+});
+
+crispy.addCommand("mban", async (args: string[], data: IJumpInMessage) => {
+  if (args.length) {
+    if (await crispy.checkAdmin(data.handle)) {
+      crispy.addBannedMessage(args.join(" "));
     }
   }
 });

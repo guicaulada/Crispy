@@ -22,7 +22,7 @@ class Crispy {
         this._userCorpus = {};
         this._db.defaults({
             admins: [],
-            banned: [],
+            banned: { users: [], messages: [] },
             blocked: [],
             ignored: [],
             messages: [],
@@ -87,7 +87,7 @@ class Crispy {
                         }
                     }
                     else if (this.options.ban &&
-                        (await this.checkBanned(data.handle) || await this.checkBanned(data.message))) {
+                        (this.checkBannedMessage(data.message) || await this.checkBannedUser(data.handle))) {
                         this.command("ban", data.handle);
                     }
                     else if (this.options.target) {
@@ -134,7 +134,7 @@ class Crispy {
         });
         this.on("room::handleChange", async (data) => {
             if (data.userId !== this.user._id) {
-                if (this.options.ban && await this.checkBanned(data.handle)) {
+                if (this.options.ban && await this.checkBannedUser(data.handle)) {
                     this.command("ban", data.handle);
                 }
             }
@@ -453,77 +453,77 @@ class Crispy {
             }
         });
     }
-    isTrigger(word) {
-        return this._db.get("triggers").value().includes(word);
+    isTrigger(message) {
+        return this._db.get("triggers").value().includes(message);
     }
     getTriggers() {
         return this._db.get("triggers").value();
     }
-    setTriggers(words) {
-        return this._db.set("triggers", words).write();
+    setTriggers(messages) {
+        return this._db.set("triggers", messages).write();
     }
-    addTrigger(word) {
-        if (!this.isTrigger(word)) {
-            return this._db.get("triggers").push(word).write();
+    addTrigger(message) {
+        if (!this.isTrigger(message)) {
+            return this._db.get("triggers").push(message).write();
         }
     }
-    addTriggers(words) {
-        for (const word of words) {
-            this.addTrigger(word);
+    addTriggers(messages) {
+        for (const message of messages) {
+            this.addTrigger(message);
         }
     }
-    removeTrigger(word) {
-        return this._db.get("triggers").pull(word).write();
+    removeTrigger(message) {
+        return this._db.get("triggers").pull(message).write();
     }
-    removeTriggers(words) {
-        for (const word of words) {
-            this.removeTrigger(word);
+    removeTriggers(messages) {
+        for (const message of messages) {
+            this.removeTrigger(message);
         }
     }
     checkTrigger(message) {
         const triggers = this.getTriggers();
-        for (const word of triggers) {
-            if (message.includes(word)) {
+        for (const m of triggers) {
+            if (message.includes(m)) {
                 return true;
             }
         }
         return false;
     }
-    isIgnored(word) {
-        return this._db.get("ignored").value().includes(word);
+    isIgnored(message) {
+        return this._db.get("ignored").value().includes(message);
     }
     getIgnored() {
         return this._db.get("ignored").value();
     }
-    setIgnored(words) {
-        return this._db.set("ignored", words).write();
+    setIgnored(messages) {
+        return this._db.set("ignored", messages).write();
     }
-    addIgnored(word) {
-        if (typeof word === "string") {
-            if (!this.isIgnored(word)) {
-                return this._db.get("ignored").push(word).write();
+    addIgnored(message) {
+        if (typeof message === "string") {
+            if (!this.isIgnored(message)) {
+                return this._db.get("ignored").push(message).write();
             }
         }
         else {
-            for (const w of word) {
-                this.addIgnored(w);
+            for (const m of message) {
+                this.addIgnored(m);
             }
         }
     }
-    removeIgnored(word) {
-        if (typeof word === "string") {
-            return this._db.get("ignored").pull(word).write();
+    removeIgnored(message) {
+        if (typeof message === "string") {
+            return this._db.get("ignored").pull(message).write();
         }
         else {
-            for (const w of word) {
-                this.removeIgnored(w);
+            for (const m of message) {
+                this.removeIgnored(m);
             }
         }
     }
     checkIgnored(message) {
         const ignored = this.getIgnored();
-        for (const word of ignored) {
-            if (message.includes(word)) {
+        for (const m of ignored) {
+            if (message.includes(m)) {
                 return true;
             }
         }
@@ -575,74 +575,92 @@ class Crispy {
             }
         });
     }
-    isBanned(handle) {
-        return this._db.get("banned").value().includes(handle);
+    isBannedUser(handle) {
+        return this._db.get("banned.users").value().includes(handle);
     }
-    getBanned() {
-        return this._db.get("banned").value();
+    isBannedMessage(message) {
+        return this._db.get("banned.messages").value().includes(message);
     }
-    setBanned(handles) {
-        return this._db.set("banned", handles).write();
+    getBannedUsers() {
+        return this._db.get("banned.users").value();
     }
-    addBanned(handle) {
-        if (typeof handle === "string") {
-            if (!this.isBanned(handle)) {
-                return this._db.get("banned").push(handle).write();
-            }
-        }
-        else {
-            for (const h of handle) {
-                this.addBanned(h);
-            }
-        }
+    getBannedMessages() {
+        return this._db.get("banned.messages").value();
     }
-    removeBanned(handle) {
-        if (typeof handle === "string") {
-            return this._db.get("banned").pull(handle).write();
-        }
-        else {
-            for (const h of handle) {
-                this.removeBanned(h);
-            }
+    setBannedUsers(handles) {
+        return this._db.set("banned.users", handles).write();
+    }
+    setBannedMessages(messages) {
+        return this._db.set("banned.messages", messages).write();
+    }
+    addBannedUser(handle) {
+        if (!this.isBannedUser(handle)) {
+            return this._db.get("banned.users").push(handle).write();
         }
     }
-    checkBanned(handleOrMessage) {
+    addBannedUsers(handles) {
+        for (const h of handles) {
+            this.addBannedUser(h);
+        }
+    }
+    addBannedMessage(message) {
+        if (!this.isBannedMessage(message)) {
+            return this._db.get("banned.messages").push(message).write();
+        }
+    }
+    addBannedMessages(messages) {
+        for (const m of messages) {
+            this.addBannedMessage(m);
+        }
+    }
+    removeBannedUser(handle) {
+        return this._db.get("banned.users").pull(handle).write();
+    }
+    removeBannedUsers(handle) {
+        for (const h of handle) {
+            this.removeBannedUser(h);
+        }
+    }
+    removeBannedMessage(message) {
+        return this._db.get("banned.messages").pull(message).write();
+    }
+    removeBannedMessages(messages) {
+        for (const m of messages) {
+            this.removeBannedMessage(m);
+        }
+    }
+    checkBannedUser(handle) {
         return new Promise(async (resolve, reject) => {
-            const words = handleOrMessage.split(/\s+/);
-            if (words.length > 1) {
-                const message = handleOrMessage;
-                const banned = this.getBanned();
-                for (const word of banned) {
-                    if (message.includes(word)) {
-                        return resolve(true);
-                    }
-                }
-                resolve(false);
+            if (this.isBannedUser(handle)) {
+                return resolve(true);
             }
-            else {
-                const handle = handleOrMessage;
-                if (this.isBanned(handle)) {
-                    return resolve(true);
+            try {
+                const room = await this.getRoom();
+                const user = room.users.filter((u) => u.handle === handle)[0];
+                if (user) {
+                    resolve(this.isBannedUser(user.username));
                 }
-                try {
-                    const room = await this.getRoom();
-                    const user = room.users.filter((u) => u.handle === handle)[0];
-                    if (user) {
-                        resolve(this.isBanned(user.username));
-                    }
-                    else {
-                        resolve(false);
-                    }
+                else {
+                    resolve(false);
                 }
-                catch (err) {
-                    reject(err);
-                }
+            }
+            catch (err) {
+                reject(err);
             }
         });
     }
+    checkBannedMessage(message) {
+        const banned = this.getBannedMessages();
+        for (const m of banned) {
+            if (message.includes(m)) {
+                return true;
+            }
+        }
+        return false;
+    }
     markovFilter(result) {
         return result.string.length >= (this.options.minLength || 0) &&
-            result.string.split(" ").length >= (this.options.minWords || 0) &&
+            result.string.split(" ").length >= (this.options.minMessages || 0) &&
             !result.refs.map((o) => o.string).includes(result.string) &&
             result.score >= (this.options.minScore || 0) &&
             !this._cooldown.has(result.string);

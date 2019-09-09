@@ -32,7 +32,7 @@ Install crispybot using npm:
 $ npm install crispybot
 ```
 
-You can now require and use crispybot like so:
+You can now import and use crispybot like so:
 
 ```ts
 import { Crispy, IJumpInMessage } from "crispybot";
