@@ -711,9 +711,7 @@ class Crispy {
             }
             else {
                 try {
-                    this._browser = await puppeteer_1.default.launch({
-                        headless: this.options.headless != null ? this.options.headless : true,
-                    });
+                    this._browser = await puppeteer_1.default.launch(this.options.puppeteer);
                     resolve(this._browser);
                 }
                 catch (err) {

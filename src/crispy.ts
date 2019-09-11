@@ -36,7 +36,6 @@ export interface ICrispyOptions {
   target?: boolean;
   unique?: boolean;
   commands?: boolean;
-  headless?: boolean;
   prefix?: string;
   cooldown?: number;
   stateSize?: number;
@@ -46,6 +45,7 @@ export interface ICrispyOptions {
   maxTries?: number;
   prng?: () => number;
   filter?: (result: MarkovResult) => boolean;
+  puppeteer?: any;
 }
 
 export type CrispyCommand = (args: string[], data: IJumpInMessage) => void;
@@ -868,9 +868,7 @@ export class Crispy {
         resolve(this._browser);
       } else {
         try {
-          this._browser = await puppeteer.launch({
-            headless: this.options.headless != null ? this.options.headless : true,
-          });
+          this._browser = await puppeteer.launch(this.options.puppeteer);
           resolve(this._browser);
         } catch (err) {
           reject(err);

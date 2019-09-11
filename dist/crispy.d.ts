@@ -15,7 +15,6 @@ export interface ICrispyOptions {
     target?: boolean;
     unique?: boolean;
     commands?: boolean;
-    headless?: boolean;
     prefix?: string;
     cooldown?: number;
     stateSize?: number;
@@ -25,6 +24,7 @@ export interface ICrispyOptions {
     maxTries?: number;
     prng?: () => number;
     filter?: (result: MarkovResult) => boolean;
+    puppeteer?: any;
 }
 export declare type CrispyCommand = (args: string[], data: IJumpInMessage) => void;
 export declare class Crispy {
