@@ -1,14 +1,17 @@
 /**
  * Crispy - An annoying bot.
  * Copyright (C) 2019  Guilherme Caulada (Sighmir)
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -17,6 +20,7 @@ import low = require("lowdb");
 import FileSync = require("lowdb/adapters/FileSync");
 import Markov, { MarkovGenerateOptions, MarkovResult } from "markov-strings";
 import puppeteer, { Browser, Page } from "puppeteer";
+import readline, { ReadLine } from "readline";
 import io from "socket.io-client";
 
 export interface IJumpInMessage {
@@ -37,6 +41,7 @@ export interface ICrispyOptions {
   unique?: boolean;
   commands?: boolean;
   prefix?: string;
+  cliPrefix?: string;
   cooldown?: number;
   stateSize?: number;
   minLength?: number;
@@ -49,6 +54,7 @@ export interface ICrispyOptions {
 }
 
 export type CrispyCommand = (args: string[], data: IJumpInMessage) => void;
+export type CrispyCliCommand = (args: string[]) => void;
 
 export class Crispy {
   public user: any;
@@ -60,6 +66,7 @@ export class Crispy {
   private _token: string;
   private _room: string;
   private _commands: { [key: string]: CrispyCommand };
+  private _cliCommands: { [key: string]: CrispyCliCommand };
   private _browser: Browser | undefined;
   private _cooldown: Set<string>;
 
@@ -67,6 +74,7 @@ export class Crispy {
   private _userCorpus: { [index: string]: any };
   private _events: { [index: string]: string[] };
   private _io: SocketIOClient.Socket | undefined;
+  private _rl: ReadLine | undefined;
 
   constructor(token: string, options = {} as ICrispyOptions) {
     this.user = {};
@@ -79,6 +87,7 @@ export class Crispy {
     this._token = token;
     this._commands = {};
     this._userCorpus = {};
+    this._cliCommands = {};
 
     this._db.defaults({
       admins: [],
@@ -148,11 +157,8 @@ export class Crispy {
           if (this.options.commands && this.isCommand(data.message)) {
             const args = data.message.slice(1, data.message.length).split(/\s+/);
             const command = args.shift();
-            for (const cmd in this._commands) {
-              if (command === cmd) {
-                this._commands[cmd](args, data);
-                break;
-              }
+            if (command && this.hasCommand(command)) {
+              this._commands[command](args, data);
             }
           } else if (
             this.options.ban &&
@@ -216,6 +222,23 @@ export class Crispy {
         console.error(err);
       }
     });
+
+    if (this.options.cli === undefined ? true : this.options.cli) {
+      this._rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
+
+      this._rl.on("line", (input) => {
+        if (this.isCliCommand(input)) {
+          const args = input.slice(1, input.length).split(/\s+/);
+          const command = args.shift();
+          if (command && this.hasCliCommand(command)) {
+            this._cliCommands[command](args);
+          }
+        }
+      });
+    }
 
     this._initCorpus();
 
@@ -524,6 +547,22 @@ export class Crispy {
 
   public removeCommand(command: string) {
     delete this._commands[command];
+  }
+
+  public isCliCommand(message: string) {
+    return (this.options.cliPrefix || "/") === message[0];
+  }
+
+  public hasCliCommand(command: string) {
+    return this._cliCommands[command] !== undefined;
+  }
+
+  public addCliCommand(command: string, handler: CrispyCliCommand) {
+    this._cliCommands[command] = handler.bind(this);
+  }
+
+  public removeCliCommand(command: string) {
+    delete this._cliCommands[command];
   }
 
   public isTarget(handle: string) {

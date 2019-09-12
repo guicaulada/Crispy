@@ -1,3 +1,20 @@
+/**
+ * Crispy - An annoying bot.
+ * Copyright (C) 2019  Guilherme Caulada (Sighmir)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 import { MarkovGenerateOptions, MarkovResult } from "markov-strings";
 export interface IJumpInMessage {
     [key: string]: string;
@@ -16,6 +33,7 @@ export interface ICrispyOptions {
     unique?: boolean;
     commands?: boolean;
     prefix?: string;
+    cliPrefix?: string;
     cooldown?: number;
     stateSize?: number;
     minLength?: number;
@@ -27,6 +45,7 @@ export interface ICrispyOptions {
     puppeteer?: any;
 }
 export declare type CrispyCommand = (args: string[], data: IJumpInMessage) => void;
+export declare type CrispyCliCommand = (args: string[]) => void;
 export declare class Crispy {
     user: any;
     options: ICrispyOptions;
@@ -36,12 +55,14 @@ export declare class Crispy {
     private _token;
     private _room;
     private _commands;
+    private _cliCommands;
     private _browser;
     private _cooldown;
     private _globalCorpus;
     private _userCorpus;
     private _events;
     private _io;
+    private _rl;
     constructor(token: string, options?: ICrispyOptions);
     readonly room: string;
     private readonly io;
@@ -112,6 +133,10 @@ export declare class Crispy {
     hasCommand(command: string): boolean;
     addCommand(command: string, handler: CrispyCommand): void;
     removeCommand(command: string): void;
+    isCliCommand(message: string): boolean;
+    hasCliCommand(command: string): boolean;
+    addCliCommand(command: string, handler: CrispyCliCommand): void;
+    removeCliCommand(command: string): void;
     isTarget(handle: string): any;
     getTargets(): any;
     setTargets(handles: string[]): any;

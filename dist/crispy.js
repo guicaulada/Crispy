@@ -1,4 +1,21 @@
 "use strict";
+/**
+ * Crispy - An annoying bot.
+ * Copyright (C) 2019  Guilherme Caulada (Sighmir)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -7,6 +24,7 @@ const low = require("lowdb");
 const FileSync = require("lowdb/adapters/FileSync");
 const markov_strings_1 = __importDefault(require("markov-strings"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
+const readline_1 = __importDefault(require("readline"));
 const socket_io_client_1 = __importDefault(require("socket.io-client"));
 class Crispy {
     constructor(token, options = {}) {
@@ -20,6 +38,7 @@ class Crispy {
         this._token = token;
         this._commands = {};
         this._userCorpus = {};
+        this._cliCommands = {};
         this._db.defaults({
             admins: [],
             banned: { users: [], messages: [] },
@@ -79,11 +98,8 @@ class Crispy {
                     if (this.options.commands && this.isCommand(data.message)) {
                         const args = data.message.slice(1, data.message.length).split(/\s+/);
                         const command = args.shift();
-                        for (const cmd in this._commands) {
-                            if (command === cmd) {
-                                this._commands[cmd](args, data);
-                                break;
-                            }
+                        if (command && this.hasCommand(command)) {
+                            this._commands[command](args, data);
                         }
                     }
                     else if (this.options.ban &&
@@ -147,6 +163,21 @@ class Crispy {
                 console.error(err);
             }
         });
+        if (this.options.cli === undefined ? true : this.options.cli) {
+            this._rl = readline_1.default.createInterface({
+                input: process.stdin,
+                output: process.stdout,
+            });
+            this._rl.on("line", (input) => {
+                if (this.isCliCommand(input)) {
+                    const args = input.slice(1, input.length).split(/\s+/);
+                    const command = args.shift();
+                    if (command && this.hasCliCommand(command)) {
+                        this._cliCommands[command](args);
+                    }
+                }
+            });
+        }
         this._initCorpus();
         const cooldownTimeout = () => {
             if (this.options.cooldown !== 0) {
@@ -342,6 +373,7 @@ class Crispy {
                 messages.push(this.generateMessage(user, options));
             }
             catch (e) {
+                // ignore
             }
         }
         return messages;
@@ -410,6 +442,18 @@ class Crispy {
     }
     removeCommand(command) {
         delete this._commands[command];
+    }
+    isCliCommand(message) {
+        return (this.options.cliPrefix || "/") === message[0];
+    }
+    hasCliCommand(command) {
+        return this._cliCommands[command] !== undefined;
+    }
+    addCliCommand(command, handler) {
+        this._cliCommands[command] = handler.bind(this);
+    }
+    removeCliCommand(command) {
+        delete this._cliCommands[command];
     }
     isTarget(handle) {
         return this._db.get("targets").value().includes(handle);

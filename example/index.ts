@@ -29,6 +29,12 @@ crispy.on("status", (data: any) => {
   console.log(data);
 });
 
+crispy.addCliCommand("say", (args: string[]) => {
+  if (args.length) {
+    crispy.message(args.join(" "));
+  }
+});
+
 crispy.addCommand("nick", async (args: string[], data: IJumpInMessage) => {
   if (args.length) {
     if (await crispy.checkAdmin(data.handle)) {
