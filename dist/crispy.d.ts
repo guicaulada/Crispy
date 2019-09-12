@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+/// <reference types="socket.io-client" />
 import { MarkovGenerateOptions, MarkovResult } from "markov-strings";
 export interface IJumpInMessage {
     [key: string]: string;
