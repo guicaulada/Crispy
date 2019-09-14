@@ -150,7 +150,7 @@ class Crispy {
         });
         this.on("room::handleChange", async (data) => {
             if (data.userId !== this.user._id) {
-                if (this.options.ban && await this.checkBannedUser(data.handle)) {
+                if (this.options.ban && (this.checkBannedMessage(data.handle) || await this.checkBannedUser(data.handle))) {
                     this.command("ban", data.handle);
                 }
             }
