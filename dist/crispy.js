@@ -424,7 +424,12 @@ class Crispy {
             try {
                 const room = await this.getRoom();
                 const user = room.users.filter((u) => u.handle === handle)[0];
-                resolve(this.isAdmin(user.username));
+                if (user) {
+                    resolve(this.isAdmin(user.username));
+                }
+                else {
+                    resolve(false);
+                }
             }
             catch (err) {
                 reject(err);
@@ -490,7 +495,12 @@ class Crispy {
             try {
                 const room = await this.getRoom();
                 const user = room.users.filter((u) => u.handle === handle)[0];
-                resolve(this.isTarget(user.username));
+                if (user) {
+                    resolve(this.isTarget(user.username));
+                }
+                else {
+                    resolve(false);
+                }
             }
             catch (err) {
                 reject(err);
@@ -612,7 +622,12 @@ class Crispy {
             try {
                 const room = await this.getRoom();
                 const user = room.users.filter((u) => u.handle === handle)[0];
-                resolve(this.isBlocked(user.username));
+                if (user) {
+                    resolve(this.isBlocked(user.username));
+                }
+                else {
+                    resolve(false);
+                }
             }
             catch (err) {
                 reject(err);
