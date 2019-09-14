@@ -18,19 +18,46 @@
 /// <reference types="socket.io-client" />
 import { MarkovGenerateOptions, MarkovResult } from "markov-strings";
 export interface IJumpInMessage {
-    [key: string]: string;
+    [key: string]: any;
     handle: string;
     color: string;
     userId: string;
     message: string;
     timestamp: string;
     id: string;
+    user: IJumpInUser | undefined;
+}
+export interface IJumpInUser {
+    [key: string]: any;
+    _id: string;
+    handle: string;
+    operator_id: string | undefined;
+    user_id: string | undefined;
+    username: string | undefined;
+    isBroadcasting: boolean;
+    assignedBy: string | undefined;
+    isAdmin: boolean;
+    isSupporter: boolean;
+    userIcon: string | undefined;
+    color: string;
+}
+export interface ICrispySensitivity {
+    [key: string]: any;
+    banned?: {
+        users?: number;
+        messages?: number;
+        words?: number;
+    };
+    blocked?: number;
+    ignored?: number;
+    targets?: number;
+    triggers?: number;
 }
 export interface ICrispyOptions {
     [key: string]: any;
     ban?: boolean;
     debug?: boolean;
-    target?: boolean;
+    markov?: boolean;
     unique?: boolean;
     commands?: boolean;
     prefix?: string;
@@ -41,9 +68,13 @@ export interface ICrispyOptions {
     minMessages?: number;
     minScore?: number;
     maxTries?: number;
+    maxAmount?: number;
     prng?: () => number;
     filter?: (result: MarkovResult) => boolean;
     puppeteer?: any;
+    sensitivity?: ICrispySensitivity | number;
+    similarity?: number;
+    caseSensitive?: boolean;
 }
 export declare type CrispyCommand = (args: string[], data: IJumpInMessage) => void;
 export declare type CrispyCliCommand = (args: string[]) => void;
@@ -117,7 +148,7 @@ export declare class Crispy {
         user?: string;
     }>): void;
     generateMessage(user?: string, options?: MarkovGenerateOptions): any;
-    generateMessages(maxAmount?: number, user?: string, options?: MarkovGenerateOptions): any[];
+    generateMessages(maxAmount?: number, user?: string, options?: MarkovGenerateOptions): MarkovResult[];
     hasUser(user: string): boolean;
     getUsers(): any;
     removeUser(user: string): any;
@@ -129,7 +160,6 @@ export declare class Crispy {
     addAdmins(usernames: string[]): void;
     removeAdmin(username: string): any;
     removeAdmins(usernames: string[]): void;
-    checkAdmin(handle: string): Promise<unknown>;
     isCommand(message: string): boolean;
     hasCommand(command: string): boolean;
     addCommand(command: string, handler: CrispyCommand): void;
@@ -145,7 +175,7 @@ export declare class Crispy {
     addTargets(handles: string[]): void;
     removeTarget(handle: string): any;
     removeTargets(handles: string): void;
-    checkTarget(handle: string): Promise<unknown>;
+    checkTarget(handle: string): boolean;
     isTrigger(message: string): any;
     getTriggers(): any;
     setTriggers(messages: string[]): any;
@@ -165,23 +195,31 @@ export declare class Crispy {
     setBlocked(handles: string[]): any;
     addBlocked(handle: string | string[]): any;
     removeBlocked(handle: string | string[]): any;
-    checkBlocked(handle: string): Promise<unknown>;
+    checkBlocked(handle: string): boolean;
     isBannedUser(handle: string): any;
     isBannedMessage(message: string): any;
+    isBannedWord(word: string): any;
     getBannedUsers(): any;
     getBannedMessages(): any;
+    getBannedWords(): any;
     setBannedUsers(handles: string[]): any;
     setBannedMessages(messages: string[]): any;
+    setBannedWords(words: string[]): any;
     addBannedUser(handle: string): any;
     addBannedUsers(handles: string[]): void;
     addBannedMessage(message: string): any;
     addBannedMessages(messages: string[]): void;
+    addBannedWord(word: string): any;
+    addBannedWords(words: string[]): void;
     removeBannedUser(handle: string): any;
     removeBannedUsers(handle: string[]): void;
     removeBannedMessage(message: string): any;
     removeBannedMessages(messages: string[]): void;
-    checkBannedUser(handle: string): Promise<unknown>;
+    removeBannedWord(word: string): any;
+    removeBannedWords(words: string[]): void;
+    checkBannedUser(handle: string): boolean;
     checkBannedMessage(message: string): boolean;
+    checkBannedWord(message: string): boolean;
     markovFilter(result: MarkovResult): boolean;
     cleanCooldown(): void;
     get(...args: any[]): any;

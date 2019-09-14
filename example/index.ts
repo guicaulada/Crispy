@@ -21,7 +21,7 @@ crispy.on("join", (data: any) => {
   crispy.handleChange(crispy.get("handle").value() || "Crispybot");
 });
 
-crispy.on("message", async (data: any) => {
+crispy.on("message", (data: any) => {
   console.log(data);
 });
 
@@ -35,67 +35,84 @@ crispy.addCliCommand("say", (args: string[]) => {
   }
 });
 
-crispy.addCommand("nick", async (args: string[], data: IJumpInMessage) => {
+crispy.addCommand("nick", (args: string[], data: IJumpInMessage) => {
+  if (!data.user || !data.user.username) return;
   if (args.length) {
-    if (await crispy.checkAdmin(data.handle)) {
+    if (crispy.isAdmin(data.user.username)) {
       crispy.set("handle", args[0]).write();
       crispy.handleChange(args[0]);
     }
   }
 });
 
-crispy.addCommand("admin", async (args: string[], data: IJumpInMessage) => {
+crispy.addCommand("admin", (args: string[], data: IJumpInMessage) => {
+  if (!data.user || !data.user.username) return;
   if (args.length) {
-    if (await crispy.checkAdmin(data.handle)) {
+    if (crispy.isAdmin(data.user.username)) {
       crispy.addAdmin(args[0]);
     }
   }
 });
 
-crispy.addCommand("target", async (args: string[], data: IJumpInMessage) => {
+crispy.addCommand("target", (args: string[], data: IJumpInMessage) => {
+  if (!data.user || !data.user.username) return;
   if (args.length) {
-    if (await crispy.checkAdmin(data.handle)) {
+    if (crispy.isAdmin(data.user.username)) {
       crispy.addTarget(args[0]);
     }
   }
 });
 
-crispy.addCommand("trigger", async (args: string[], data: IJumpInMessage) => {
+crispy.addCommand("trigger", (args: string[], data: IJumpInMessage) => {
+  if (!data.user || !data.user.username) return;
   if (args.length) {
-    if (await crispy.checkAdmin(data.handle)) {
+    if (crispy.isAdmin(data.user.username)) {
       crispy.addTrigger(args.join(" "));
     }
   }
 });
 
-crispy.addCommand("ban", async (args: string[], data: IJumpInMessage) => {
+crispy.addCommand("ban", (args: string[], data: IJumpInMessage) => {
+  if (!data.user || !data.user.username) return;
   if (args.length) {
-    if (await crispy.checkAdmin(data.handle)) {
+    if (crispy.isAdmin(data.user.username)) {
       crispy.command("ban", args[0]);
       crispy.addBannedUser(args[0]);
     }
   }
 });
 
-crispy.addCommand("mban", async (args: string[], data: IJumpInMessage) => {
+crispy.addCommand("mban", (args: string[], data: IJumpInMessage) => {
+  if (!data.user || !data.user.username) return;
   if (args.length) {
-    if (await crispy.checkAdmin(data.handle)) {
+    if (crispy.isAdmin(data.user.username)) {
       crispy.addBannedMessage(args.join(" "));
     }
   }
 });
 
-crispy.addCommand("block", async (args: string[], data: IJumpInMessage) => {
+crispy.addCommand("wban", (args: string[], data: IJumpInMessage) => {
+  if (!data.user || !data.user.username) return;
   if (args.length) {
-    if (await crispy.checkAdmin(data.handle)) {
+    if (crispy.isAdmin(data.user.username)) {
+      crispy.addBannedWord(args[0]);
+    }
+  }
+});
+
+crispy.addCommand("block", (args: string[], data: IJumpInMessage) => {
+  if (!data.user || !data.user.username) return;
+  if (args.length) {
+    if (crispy.isAdmin(data.user.username)) {
       crispy.addBlocked(args[0]);
     }
   }
 });
 
-crispy.addCommand("ignore", async (args: string[], data: IJumpInMessage) => {
+crispy.addCommand("ignore", (args: string[], data: IJumpInMessage) => {
+  if (!data.user || !data.user.username) return;
   if (args.length) {
-    if (await crispy.checkAdmin(data.handle)) {
+    if (crispy.isAdmin(data.user.username)) {
       crispy.addIgnored(args[0]);
     }
   }

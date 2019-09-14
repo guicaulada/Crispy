@@ -22,22 +22,52 @@ import Markov, { MarkovGenerateOptions, MarkovResult } from "markov-strings";
 import puppeteer, { Browser, Page } from "puppeteer";
 import readline, { ReadLine } from "readline";
 import io from "socket.io-client";
+import { compareTwoStrings, findBestMatch } from "string-similarity";
 
 export interface IJumpInMessage {
-  [key: string]: string;
+  [key: string]: any;
   handle: string;
   color: string;
   userId: string;
   message: string;
   timestamp: string;
   id: string;
+  user: IJumpInUser | undefined;
+}
+
+export interface IJumpInUser {
+  [key: string]: any;
+  _id: string;
+  handle: string;
+  operator_id: string | undefined;
+  user_id: string | undefined;
+  username: string | undefined;
+  isBroadcasting: boolean;
+  assignedBy: string | undefined;
+  isAdmin: boolean;
+  isSupporter: boolean;
+  userIcon: string | undefined;
+  color: string;
+}
+
+export interface ICrispySensitivity {
+  [key: string]: any;
+  banned?: {
+    users?: number;
+    messages?: number;
+    words?: number;
+  };
+  blocked?: number;
+  ignored?: number;
+  targets?: number;
+  triggers?: number;
 }
 
 export interface ICrispyOptions {
   [key: string]: any;
   ban?: boolean;
   debug?: boolean;
-  target?: boolean;
+  markov?: boolean;
   unique?: boolean;
   commands?: boolean;
   prefix?: string;
@@ -48,9 +78,13 @@ export interface ICrispyOptions {
   minMessages?: number;
   minScore?: number;
   maxTries?: number;
+  maxAmount?: number;
   prng?: () => number;
   filter?: (result: MarkovResult) => boolean;
   puppeteer?: any;
+  sensitivity?: ICrispySensitivity | number;
+  similarity?: number;
+  caseSensitive?: boolean;
 }
 
 export type CrispyCommand = (args: string[], data: IJumpInMessage) => void;
@@ -91,7 +125,7 @@ export class Crispy {
 
     this._db.defaults({
       admins: [],
-      banned: { users: [], messages: [] },
+      banned: { messages: [], users: [], words: [] },
       blocked: [],
       ignored: [],
       messages: [],
@@ -140,54 +174,90 @@ export class Crispy {
       this.options.unique = true;
     }
 
-    if (this.options.target == null) {
-      this.options.target = true;
+    if (this.options.markov == null) {
+      this.options.markov = true;
     }
 
     if (this.options.ban == null) {
       this.options.ban = true;
     }
 
+    if (this.options.sensitivity == null) {
+      this.options.sensitivity = {};
+    }
+
+    if (typeof this.options.sensitivity === "number") {
+      this.options.sensitivity = {
+        banned: {
+          messages: this.options.sensitivity,
+          users: this.options.sensitivity,
+          words: this.options.sensitivity,
+        },
+        blocked: this.options.sensitivity,
+        ignored: this.options.sensitivity,
+        targets: this.options.sensitivity,
+        triggers: this.options.sensitivity,
+      };
+    }
+
     this.on("message", async (data: IJumpInMessage) => {
       try {
-        if (data.userId !== this.user._id &&
-          !await this.checkBlocked(data.handle) &&
-          !this.checkIgnored(data.message)
-        ) {
-          if (this.options.commands && this.isCommand(data.message)) {
-            const args = data.message.slice(1, data.message.length).split(/\s+/);
-            const command = args.shift();
-            if (command && this.hasCommand(command)) {
-              this._commands[command](args, data);
-            }
-          } else if (
-            this.options.ban &&
-            (this.checkBannedMessage(data.message) || await this.checkBannedUser(data.handle))
-          ) {
-            this.command("ban", data.handle);
-          } else if (this.options.target) {
-            if (this.options.unique) {
-              this.addUniqueMessage(data.message, data.handle);
-            } else {
-              this.addMessage(data.message, data.handle);
-            }
-            if (await this.checkTarget(data.handle) || this.checkTrigger(data.message)) {
-              try {
-                const message = this.generateMessage(data.handle);
-                this.message(message.string);
-                if (this.options.debug) {
-                  console.log(message);
+        const room = await this.getRoom();
+        data.user = room.users.filter((u: any) => u.handle === data.handle)[0];
+        if (data.user) {
+          if (data.userId !== this.user._id) {
+            if (this.options.commands && this.isCommand(data.message)) {
+              const args = data.message.slice(1, data.message.length).split(/\s+/);
+              const command = args.shift();
+              if (command && this.hasCommand(command)) {
+                this._commands[command](args, data);
+              }
+            } else if (
+              this.options.ban && (
+                this.checkBannedWord(data.message) ||
+                this.checkBannedMessage(data.message) ||
+                this.checkBannedUser(data.handle) ||
+                (data.user.username && this.checkBannedUser(data.user.username))
+              )
+            ) {
+              this.command("ban", data.handle);
+            } else if (this.options.markov) {
+              if (!(
+                this.checkIgnored(data.message) ||
+                this.checkBlocked(data.handle) ||
+                (data.user.username && this.checkBlocked(data.user.username))
+              )) {
+                if (this.options.unique) {
+                  this.addUniqueMessage(data.message, data.user.username || data.handle);
+                } else {
+                  this.addMessage(data.message, data.user.username || data.handle);
                 }
-              } catch {
-                try {
-                  const message = this.generateMessage();
-                  this.message(message.string);
-                  if (this.options.debug) {
-                    console.log(message);
+                if (
+                  this.checkTarget(data.handle) ||
+                  this.checkTrigger(data.message) ||
+                  (data.user.username && this.checkTarget(data.user.username))
+                ) {
+                  let match = null;
+                  let messages = this.generateMessages(this.options.maxAmount, data.user.username || data.handle);
+                  if (messages.length) {
+                    match = findBestMatch(data.message, messages.map((m) => m.string));
+                    if (match.bestMatch.rating >= (this.options.similarity || 0)) {
+                      this._cooldown.add(match.bestMatch.target);
+                      this.message(match.bestMatch.target);
+                    }
+                  } else {
+                    messages = this.generateMessages(this.options.maxAmount);
+                    if (messages.length) {
+                      match = findBestMatch(data.message, messages.map((m) => m.string));
+                      if (match.bestMatch.rating >= (this.options.similarity || 0)) {
+                        this._cooldown.add(match.bestMatch.target);
+                        this.message(match.bestMatch.target);
+                      }
+                    }
                   }
-                } catch (err) {
-                  if (this.options.debug) {
-                    console.log(err.message);
+
+                  if (this.options.debug && match) {
+                    console.log(Object.assign({}, match.bestMatch, messages[match.bestMatchIndex]));
                   }
                 }
               }
@@ -207,7 +277,12 @@ export class Crispy {
 
     this.on("room::handleChange", async (data: any) => {
       if (data.userId !== this.user._id) {
-        if (this.options.ban && (this.checkBannedMessage(data.handle) || await this.checkBannedUser(data.handle))) {
+        const room = await this.getRoom();
+        data.user = room.users.filter((u: any) => u.handle === data.handle)[0];
+        if (this.options.ban && (
+          this.checkBannedUser(data.handle) ||
+          (data.user.username && this.checkBannedUser(data.user.username))
+        )) {
           this.command("ban", data.handle);
         }
       }
@@ -453,12 +528,17 @@ export class Crispy {
     } else {
       message = this._globalCorpus.generate(options);
     }
-    this._cooldown.add(message.string);
     return message;
   }
 
   public generateMessages(maxAmount: number = 10, user?: string, options = {} as MarkovGenerateOptions) {
-    const messages = [];
+    const messages = [] as MarkovResult[];
+
+    options.filter = (result: MarkovResult) => {
+      const filter = this.options.filter as (result: MarkovResult) => boolean;
+      return filter(result) && !messages.map((m) => m.string).includes(result.string);
+    };
+
     for (let i = 0; i < maxAmount; i++) {
       try {
         messages.push(this.generateMessage(user, options));
@@ -519,22 +599,6 @@ export class Crispy {
     for (const username of usernames) {
       this.removeAdmin(username);
     }
-  }
-
-  public checkAdmin(handle: string) {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const room = await this.getRoom();
-        const user = room.users.filter((u: any) => u.handle === handle)[0];
-        if (user) {
-          resolve(this.isAdmin(user.username));
-        } else {
-          resolve(false);
-        }
-      } catch (err) {
-        reject(err);
-      }
-    });
   }
 
   public isCommand(message: string) {
@@ -604,22 +668,17 @@ export class Crispy {
   }
 
   public checkTarget(handle: string) {
-    return new Promise(async (resolve, reject) => {
-      if (this.isTarget(handle)) {
-        return resolve(true);
+    const sensitivity = this.options.sensitivity as ICrispySensitivity;
+    const targets = this.getTargets();
+    for (const h of targets) {
+      if (compareTwoStrings(
+        this.options.caseSensitive ? h : h.toLowerCase(),
+        this.options.caseSensitive ? handle : handle.toLowerCase(),
+      ) >= (1 - (sensitivity.targets || 0))) {
+        return true;
       }
-      try {
-        const room = await this.getRoom();
-        const user = room.users.filter((u: any) => u.handle === handle)[0];
-        if (user) {
-          resolve(this.isTarget(user.username));
-        } else {
-          resolve(false);
-        }
-      } catch (err) {
-        reject(err);
-      }
-    });
+    }
+    return false;
   }
 
   public isTrigger(message: string) {
@@ -657,10 +716,17 @@ export class Crispy {
   }
 
   public checkTrigger(message: string) {
+    const sensitivity = this.options.sensitivity as ICrispySensitivity;
     const triggers = this.getTriggers();
+    const words = message.split(/\s+/);
     for (const m of triggers) {
-      if (message.includes(m)) {
-        return true;
+      for (const w of words) {
+        if (compareTwoStrings(
+          this.options.caseSensitive ? m : m.toLowerCase(),
+          this.options.caseSensitive ? w : w.toLowerCase(),
+        ) >= (1 - (sensitivity.triggers || 0))) {
+          return true;
+        }
       }
     }
     return false;
@@ -701,10 +767,17 @@ export class Crispy {
   }
 
   public checkIgnored(message: string) {
+    const sensitivity = this.options.sensitivity as ICrispySensitivity;
     const ignored = this.getIgnored();
+    const words = message.split(/\s+/);
     for (const m of ignored) {
-      if (message.includes(m)) {
-        return true;
+      for (const w of words) {
+        if (compareTwoStrings(
+          this.options.caseSensitive ? m : m.toLowerCase(),
+          this.options.caseSensitive ? w : w.toLowerCase(),
+        ) >= (1 - (sensitivity.ignored || 0))) {
+          return true;
+        }
       }
     }
     return false;
@@ -745,22 +818,17 @@ export class Crispy {
   }
 
   public checkBlocked(handle: string) {
-    return new Promise(async (resolve, reject) => {
-      if (this.isBlocked(handle)) {
-        return resolve(true);
+    const sensitivity = this.options.sensitivity as ICrispySensitivity;
+    const blocked = this.getBlocked();
+    for (const h of blocked) {
+      if (compareTwoStrings(
+        this.options.caseSensitive ? h : h.toLowerCase(),
+        this.options.caseSensitive ? handle : handle.toLowerCase(),
+      ) >= (1 - (sensitivity.blocked || 0))) {
+        return true;
       }
-      try {
-        const room = await this.getRoom();
-        const user = room.users.filter((u: any) => u.handle === handle)[0];
-        if (user) {
-          resolve(this.isBlocked(user.username));
-        } else {
-          resolve(false);
-        }
-      } catch (err) {
-        reject(err);
-      }
-    });
+    }
+    return false;
   }
 
   public isBannedUser(handle: string) {
@@ -771,6 +839,10 @@ export class Crispy {
     return this._db.get("banned.messages").value().includes(message);
   }
 
+  public isBannedWord(word: string) {
+    return this._db.get("banned.words").value().includes(word);
+  }
+
   public getBannedUsers() {
     return this._db.get("banned.users").value();
   }
@@ -779,12 +851,20 @@ export class Crispy {
     return this._db.get("banned.messages").value();
   }
 
+  public getBannedWords() {
+    return this._db.get("banned.words").value();
+  }
+
   public setBannedUsers(handles: string[]) {
     return this._db.set("banned.users", handles).write();
   }
 
   public setBannedMessages(messages: string[]) {
     return this._db.set("banned.messages", messages).write();
+  }
+
+  public setBannedWords(words: string[]) {
+    return this._db.set("banned.words", words).write();
   }
 
   public addBannedUser(handle: string) {
@@ -811,6 +891,18 @@ export class Crispy {
     }
   }
 
+  public addBannedWord(word: string) {
+    if (!this.isBannedWord(word)) {
+      return this._db.get("banned.words").push(word).write();
+    }
+  }
+
+  public addBannedWords(words: string[]) {
+    for (const w of words) {
+      this.addBannedWord(w);
+    }
+  }
+
   public removeBannedUser(handle: string) {
     return this._db.get("banned.users").pull(handle).write();
   }
@@ -831,30 +923,56 @@ export class Crispy {
     }
   }
 
+  public removeBannedWord(word: string) {
+    return this._db.get("banned.words").pull(word).write();
+  }
+
+  public removeBannedWords(words: string[]) {
+    for (const w of words) {
+      this.removeBannedWord(w);
+    }
+  }
+
   public checkBannedUser(handle: string) {
-    return new Promise(async (resolve, reject) => {
-      if (this.isBannedUser(handle)) {
-        return resolve(true);
+    const sensitivity = this.options.sensitivity as ICrispySensitivity;
+    const banSensitivity = sensitivity.banned || {};
+    const banned = this.getBannedUsers();
+    for (const h of banned) {
+      if (compareTwoStrings(
+        this.options.caseSensitive ? h : h.toLowerCase(),
+        this.options.caseSensitive ? handle : handle.toLowerCase(),
+      ) >= (1 - (banSensitivity.users || 0))) {
+        return true;
       }
-      try {
-        const room = await this.getRoom();
-        const user = room.users.filter((u: any) => u.handle === handle)[0];
-        if (user) {
-          resolve(this.isBannedUser(user.username));
-        } else {
-          resolve(false);
-        }
-      } catch (err) {
-        reject(err);
-      }
-    });
+    }
+    return false;
   }
 
   public checkBannedMessage(message: string) {
+    const sensitivity = this.options.sensitivity as ICrispySensitivity;
+    const banSensitivity = sensitivity.banned || {};
     const banned = this.getBannedMessages();
     for (const m of banned) {
-      if (message.includes(m)) {
+      if (compareTwoStrings(m, message) >= (1 - (banSensitivity.messages || 0))) {
         return true;
+      }
+    }
+    return false;
+  }
+
+  public checkBannedWord(message: string) {
+    const sensitivity = this.options.sensitivity as ICrispySensitivity;
+    const banSensitivity = sensitivity.banned || {};
+    const banned = this.getBannedWords();
+    const words = message.split(/\s+/);
+    for (const m of banned) {
+      for (const w of words) {
+        if (compareTwoStrings(
+          this.options.caseSensitive ? m : m.toLowerCase(),
+          this.options.caseSensitive ? w : w.toLowerCase(),
+        ) >= (1 - (banSensitivity.words || 0))) {
+          return true;
+        }
       }
     }
     return false;
