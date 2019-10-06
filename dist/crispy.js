@@ -136,11 +136,21 @@ class Crispy {
                                 else {
                                     this.addMessage(data.message, data.user.username || data.handle);
                                 }
-                                if (this.checkTarget(data.handle) ||
-                                    this.checkTrigger(data.message) ||
-                                    (data.user.username && this.checkTarget(data.user.username))) {
-                                    let match = null;
-                                    let messages = this.generateMessages(this.options.maxAmount, data.user.username || data.handle);
+                            }
+                            if (this.checkTarget(data.handle) ||
+                                this.checkTrigger(data.message) ||
+                                (data.user.username && this.checkTarget(data.user.username))) {
+                                let match = null;
+                                let messages = this.generateMessages(this.options.maxAmount, data.user.username || data.handle);
+                                if (messages.length) {
+                                    match = string_similarity_1.findBestMatch(data.message, messages.map((m) => m.string));
+                                    if (match.bestMatch.rating >= (this.options.similarity || 0)) {
+                                        this._cooldown.add(match.bestMatch.target);
+                                        this.message(match.bestMatch.target);
+                                    }
+                                }
+                                else {
+                                    messages = this.generateMessages(this.options.maxAmount);
                                     if (messages.length) {
                                         match = string_similarity_1.findBestMatch(data.message, messages.map((m) => m.string));
                                         if (match.bestMatch.rating >= (this.options.similarity || 0)) {
@@ -148,19 +158,9 @@ class Crispy {
                                             this.message(match.bestMatch.target);
                                         }
                                     }
-                                    else {
-                                        messages = this.generateMessages(this.options.maxAmount);
-                                        if (messages.length) {
-                                            match = string_similarity_1.findBestMatch(data.message, messages.map((m) => m.string));
-                                            if (match.bestMatch.rating >= (this.options.similarity || 0)) {
-                                                this._cooldown.add(match.bestMatch.target);
-                                                this.message(match.bestMatch.target);
-                                            }
-                                        }
-                                    }
-                                    if (this.options.debug && match) {
-                                        console.log(Object.assign({}, match.bestMatch, messages[match.bestMatchIndex]));
-                                    }
+                                }
+                                if (this.options.debug && match) {
+                                    console.log(Object.assign({}, match.bestMatch, messages[match.bestMatchIndex]));
                                 }
                             }
                         }
