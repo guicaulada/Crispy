@@ -508,7 +508,7 @@ class Crispy {
         const sensitivity = this.options.sensitivity;
         const targets = this.getTargets();
         for (const h of targets) {
-            if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? h : h.toLowerCase(), this.options.caseSensitive ? handle : handle.toLowerCase()) >= (1 - (sensitivity.targets || 0))) {
+            if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? h : h.toLowerCase(), this.options.caseSensitive ? handle : handle.toLowerCase()) >= (1 - (sensitivity.targets || 0)) || (this.options.caseSensitive ? handle.includes(h) : handle.toLowerCase().includes(h.toLowerCase()))) {
                 return true;
             }
         }
@@ -547,7 +547,7 @@ class Crispy {
         const words = message.split(/\s+/);
         for (const m of triggers) {
             for (const w of words) {
-                if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? m : m.toLowerCase(), this.options.caseSensitive ? w : w.toLowerCase()) >= (1 - (sensitivity.triggers || 0))) {
+                if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? m : m.toLowerCase(), this.options.caseSensitive ? w : w.toLowerCase()) >= (1 - (sensitivity.triggers || 0)) || (this.options.caseSensitive ? message.includes(m) : message.toLowerCase().includes(m.toLowerCase()))) {
                     return true;
                 }
             }
@@ -591,7 +591,7 @@ class Crispy {
         const words = message.split(/\s+/);
         for (const m of ignored) {
             for (const w of words) {
-                if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? m : m.toLowerCase(), this.options.caseSensitive ? w : w.toLowerCase()) >= (1 - (sensitivity.ignored || 0))) {
+                if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? m : m.toLowerCase(), this.options.caseSensitive ? w : w.toLowerCase()) >= (1 - (sensitivity.ignored || 0)) || (this.options.caseSensitive ? message.includes(m) : message.toLowerCase().includes(m.toLowerCase()))) {
                     return true;
                 }
             }
@@ -633,7 +633,7 @@ class Crispy {
         const sensitivity = this.options.sensitivity;
         const blocked = this.getBlocked();
         for (const h of blocked) {
-            if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? h : h.toLowerCase(), this.options.caseSensitive ? handle : handle.toLowerCase()) >= (1 - (sensitivity.blocked || 0))) {
+            if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? h : h.toLowerCase(), this.options.caseSensitive ? handle : handle.toLowerCase()) >= (1 - (sensitivity.blocked || 0)) || (this.options.caseSensitive ? handle.includes(h) : handle.toLowerCase().includes(h.toLowerCase()))) {
                 return true;
             }
         }
@@ -725,7 +725,7 @@ class Crispy {
         const banSensitivity = sensitivity.banned || {};
         const banned = this.getBannedUsers();
         for (const h of banned) {
-            if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? h : h.toLowerCase(), this.options.caseSensitive ? handle : handle.toLowerCase()) >= (1 - (banSensitivity.users || 0))) {
+            if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? h : h.toLowerCase(), this.options.caseSensitive ? handle : handle.toLowerCase()) >= (1 - (banSensitivity.users || 0)) || (this.options.caseSensitive ? handle.includes(h) : handle.toLowerCase().includes(h.toLowerCase()))) {
                 return true;
             }
         }
@@ -749,7 +749,7 @@ class Crispy {
         const words = message.split(/\s+/);
         for (const m of banned) {
             for (const w of words) {
-                if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? m : m.toLowerCase(), this.options.caseSensitive ? w : w.toLowerCase()) >= (1 - (banSensitivity.words || 0))) {
+                if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? m : m.toLowerCase(), this.options.caseSensitive ? w : w.toLowerCase()) >= (1 - (banSensitivity.words || 0)) || (this.options.caseSensitive ? message.includes(m) : message.toLowerCase().includes(m.toLowerCase()))) {
                     return true;
                 }
             }

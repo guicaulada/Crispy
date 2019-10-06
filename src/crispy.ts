@@ -674,7 +674,9 @@ export class Crispy {
       if (compareTwoStrings(
         this.options.caseSensitive ? h : h.toLowerCase(),
         this.options.caseSensitive ? handle : handle.toLowerCase(),
-      ) >= (1 - (sensitivity.targets || 0))) {
+      ) >= (1 - (sensitivity.targets || 0)) || (
+        this.options.caseSensitive ? handle.includes(h) : handle.toLowerCase().includes(h.toLowerCase())
+      )) {
         return true;
       }
     }
@@ -724,7 +726,9 @@ export class Crispy {
         if (compareTwoStrings(
           this.options.caseSensitive ? m : m.toLowerCase(),
           this.options.caseSensitive ? w : w.toLowerCase(),
-        ) >= (1 - (sensitivity.triggers || 0))) {
+        ) >= (1 - (sensitivity.triggers || 0)) || (
+          this.options.caseSensitive ? message.includes(m) : message.toLowerCase().includes(m.toLowerCase())
+        )) {
           return true;
         }
       }
@@ -775,7 +779,9 @@ export class Crispy {
         if (compareTwoStrings(
           this.options.caseSensitive ? m : m.toLowerCase(),
           this.options.caseSensitive ? w : w.toLowerCase(),
-        ) >= (1 - (sensitivity.ignored || 0))) {
+        ) >= (1 - (sensitivity.ignored || 0)) || (
+          this.options.caseSensitive ? message.includes(m) : message.toLowerCase().includes(m.toLowerCase())
+        )) {
           return true;
         }
       }
@@ -824,7 +830,9 @@ export class Crispy {
       if (compareTwoStrings(
         this.options.caseSensitive ? h : h.toLowerCase(),
         this.options.caseSensitive ? handle : handle.toLowerCase(),
-      ) >= (1 - (sensitivity.blocked || 0))) {
+      ) >= (1 - (sensitivity.blocked || 0)) || (
+        this.options.caseSensitive ? handle.includes(h) : handle.toLowerCase().includes(h.toLowerCase())
+      )) {
         return true;
       }
     }
@@ -941,7 +949,9 @@ export class Crispy {
       if (compareTwoStrings(
         this.options.caseSensitive ? h : h.toLowerCase(),
         this.options.caseSensitive ? handle : handle.toLowerCase(),
-      ) >= (1 - (banSensitivity.users || 0))) {
+      ) >= (1 - (banSensitivity.users || 0)) || (
+        this.options.caseSensitive ? handle.includes(h) : handle.toLowerCase().includes(h.toLowerCase())
+      )) {
         return true;
       }
     }
@@ -970,7 +980,9 @@ export class Crispy {
         if (compareTwoStrings(
           this.options.caseSensitive ? m : m.toLowerCase(),
           this.options.caseSensitive ? w : w.toLowerCase(),
-        ) >= (1 - (banSensitivity.words || 0))) {
+        ) >= (1 - (banSensitivity.words || 0)) || (
+          this.options.caseSensitive ? message.includes(m) : message.toLowerCase().includes(m.toLowerCase())
+        )) {
           return true;
         }
       }
