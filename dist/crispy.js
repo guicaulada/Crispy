@@ -547,7 +547,7 @@ class Crispy {
         const words = message.split(/\s+/);
         for (const m of triggers) {
             for (const w of words) {
-                if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? m : m.toLowerCase(), this.options.caseSensitive ? w : w.toLowerCase()) >= (1 - (sensitivity.triggers || 0)) || (this.options.caseSensitive ? message.includes(m) : message.toLowerCase().includes(m.toLowerCase()))) {
+                if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? m : m.toLowerCase(), this.options.caseSensitive ? w : w.toLowerCase()) >= (1 - (sensitivity.triggers || 0)) || (this.options.caseSensitive ? w.includes(m) : w.toLowerCase().includes(m.toLowerCase()))) {
                     return true;
                 }
             }
@@ -591,7 +591,7 @@ class Crispy {
         const words = message.split(/\s+/);
         for (const m of ignored) {
             for (const w of words) {
-                if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? m : m.toLowerCase(), this.options.caseSensitive ? w : w.toLowerCase()) >= (1 - (sensitivity.ignored || 0)) || (this.options.caseSensitive ? message.includes(m) : message.toLowerCase().includes(m.toLowerCase()))) {
+                if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? m : m.toLowerCase(), this.options.caseSensitive ? w : w.toLowerCase()) >= (1 - (sensitivity.ignored || 0)) || (this.options.caseSensitive ? w.includes(m) : w.toLowerCase().includes(m.toLowerCase()))) {
                     return true;
                 }
             }
@@ -736,7 +736,7 @@ class Crispy {
         const banSensitivity = sensitivity.banned || {};
         const banned = this.getBannedMessages();
         for (const m of banned) {
-            if (string_similarity_1.compareTwoStrings(m, message) >= (1 - (banSensitivity.messages || 0))) {
+            if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? m : m.toLowerCase(), this.options.caseSensitive ? message : message.toLowerCase()) >= (1 - (banSensitivity.messages || 0)) || (this.options.caseSensitive ? message.includes(m) : message.toLowerCase().includes(m.toLowerCase()))) {
                 return true;
             }
         }
@@ -749,7 +749,7 @@ class Crispy {
         const words = message.split(/\s+/);
         for (const m of banned) {
             for (const w of words) {
-                if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? m : m.toLowerCase(), this.options.caseSensitive ? w : w.toLowerCase()) >= (1 - (banSensitivity.words || 0)) || (this.options.caseSensitive ? message.includes(m) : message.toLowerCase().includes(m.toLowerCase()))) {
+                if (string_similarity_1.compareTwoStrings(this.options.caseSensitive ? m : m.toLowerCase(), this.options.caseSensitive ? w : w.toLowerCase()) >= (1 - (banSensitivity.words || 0)) || (this.options.caseSensitive ? w.includes(m) : w.toLowerCase().includes(m.toLowerCase()))) {
                     return true;
                 }
             }
